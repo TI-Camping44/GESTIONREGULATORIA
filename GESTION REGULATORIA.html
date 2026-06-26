@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Gerencial Avanzado - C44 DIGEMABEL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .tab-content { display: none; opacity: 0; transform: translateY(10px); transition: all 0.4s ease; }
+        .tab-content.active { display: block; opacity: 1; transform: translateY(0); }
+
+        .saas-table th { position: sticky; top: 0; background-color: #f8fafc; z-index: 10; }
+        
+        /* Efecto Glassmorphism suave para las tarjetas */
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+    </style>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
+
+        // ==========================================
+        // FUNCIONES DE LIMPIEZA Y EXTRACCIÓN
+        // ==========================================
+        function cleanAndParseNumber(cellValue) {
+            if (!cellValue || String(cellValue).includes("#VALUE!") || String(cellValue).includes("#DIV/0!")) return 0;
+            let cleanStr = String(cellValue).replace(/[.₲\s%]/g, '').replace(',', '.').trim();
+            if (cleanStr === '-' || cleanStr === '') return 0;
+            let parsed = parseFloat(cleanStr);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        function formatGuaranies(val) {
+            return "₲ " + Math.round(val).toLocaleString('es-PY');
+        }
+
+        function findRowByLabel(matrix, keyword) {
+            if (!matrix || !Array.isArray(matrix)) return null;
+            return matrix.find(row => row && Array.isArray(row) && row.some(cell => String(cell).toLowerCase().includes(keyword.toLowerCase())));
+        }
+
+        function extractNumbersFromRow(row) {
+            if (!row) return [];
+            let numbers = [];
+            for (let i = 1; i < row.length; i++) {
+                let val = cleanAndParseNumber(row[i]);
+                if (String(row[i]).trim() !== '' && String(row[i]).trim() !== '₲' && String(row[i]).trim() !== '-') {
+                    numbers.push(val);
+                }
+            }
+            return numbers;
+        }
+
+        // Extractor específico para los meses (Enero a Diciembre = índices 1 al 12)
+        function extractMonthlyData(row) {
+            let data = [];
+            if(!row) return Array(12).fill(0);
+            for(let i=1; i<=12; i++) {
+                data.push(cleanAndParseNumber(row[i]));
+            }
+            return data;
+        }
+
+        // ==========================================
+        // GENERADOR DE TABLAS HERMOSEADAS
+        // ==========================================
+        function generateDynamicTable(matrix, containerId) {
+            const container = document.getElementById(containerId);
+            if (!matrix || matrix.length === 0) {
+                container.innerHTML = `<div class="p-10 text-center text-gray-400"><i data-lucide="folder-search" class="w-16 h-16 mx-auto mb-4 opacity-50"></i><p class="font-medium">No se encontraron registros de datos.</p></div>`;
+                lucide.createIcons();
+                return;
+            }
+            
+            let html = `<div class='overflow-auto max-h-[650px] rounded-xl border border-gray-200 bg-white shadow-sm'>
+                        <table class='w-full text-sm text-left text-gray-600 saas-table border-collapse'>`;
+            
+            matrix.forEach((row, rIdx) => {
+                const isEveryCellEmpty = row.every(c => String(c).trim() === "");
+                if (isEveryCellEmpty) return; 
+
+                const isHeader = rIdx === 0 || String(row[0]).toLowerCase().includes('proceso') || String(row[0]).toLowerCase().includes('item');
+                const trClass = isHeader 
+                    ? "bg-slate-50 text-slate-700 font-bold uppercase text-[10px] tracking-widest border-b-2 border-gray-200" 
+                    : "hover:bg-blue-50/40 border-b border-gray-100 transition-colors duration-150 searchable-row";
+
+                html += `<tr class="${trClass}">`;
+                row.forEach((cell, cIdx) => {
+                    const cellStr = String(cell).trim();
+                    let extraClass = "";
+                    
+                    if (cellStr.includes("#VALUE!") || cellStr.includes("#DIV/0!")) {
+                        extraClass = "text-red-500 font-bold bg-red-50/80 px-2 py-1 rounded shadow-inner text-xs inline-block mt-1";
+                    } else if (cellStr.includes("₲")) {
+                        extraClass = "font-bold text-slate-800 text-right pr-4";
+                    }
+
+                    if (isHeader) {
+                        html += `<th class='py-4 px-5 whitespace-nowrap ${cIdx === 0 ? 'pl-6' : ''}'>${cellStr}</th>`;
+                    } else {
+                        html += `<td class='py-3 px-5 ${cIdx === 0 ? 'pl-6 font-semibold text-slate-700' : ''}'><span class="${extraClass}">${cellStr}</span></td>`;
+                    }
+                });
+                html += `</tr>`;
+            });
+            html += `</table></div>`;
+            container.innerHTML = html;
+        }
+
+        // ==========================================
+        // CEREBRO PRINCIPAL (FETCH API)
+        // ==========================================
+        async function fetchLiveSheetsData() {
+            const loader = document.getElementById('loader');
+            const errorMsg = document.getElementById('error-msg');
+            
+            try {
+                const response = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+
+                const rawText = await response.text();
+                const data = JSON.parse(rawText);
+                const resumen = data["RESUMEN"];
+                if (!resumen) throw new Error("No se encontró la pestaña 'RESUMEN'.");
+                
+                // 1. EXTRACCIÓN DE CARTERA (FINANZAS)
+                const rPropia = findRowByLabel(resumen, "GESTION PROPIA");
+                const rCamping = findRowByLabel(resumen, "EN GESTION CAMPING");
+                const rSinPago = findRowByLabel(resumen, "SIN PAGO ALGUNO");
+                const rSenado = findRowByLabel(resumen, "SEÑADO");
+
+                const nPropia = extractNumbersFromRow(rPropia);
+                const nCamping = extractNumbersFromRow(rCamping);
+                const nSinPago = extractNumbersFromRow(rSinPago);
+                const nSenado = extractNumbersFromRow(rSenado);
+
+                const propiaCant = nPropia[0] || 0;   const propiaMonto = nPropia[1] || 0;
+                const campingCant = nCamping[0] || 0; const campingMonto = nCamping[1] || 0;
+                const sinPagoCant = nSinPago[0] || 0; const sinPagoMonto = nSinPago[1] || 0;
+                const senadoCant = nSenado[0] || 0;   const senadoMonto = nSenado[1] || 0;
+
+                const totalPendientesCant = propiaCant + campingCant + sinPagoCant + senadoCant;
+                const totalPendientesMonto = propiaMonto + campingMonto + sinPagoMonto + senadoMonto;
+
+                document.getElementById('kpi-cartera-total').innerText = totalPendientesCant;
+                document.getElementById('val-cartera-monto').innerText = formatGuaranies(totalPendientesMonto);
+                
+                // 2. EXTRACCIÓN DEL PROCESO 2026 (NUEVO SEGÚN CAPTURA)
+                const rTotalCH = findRowByLabel(resumen, "CANTIDAD DE GESTIONES DE DOCUMENTOS PARA CH");
+                const rMas30 = findRowByLabel(resumen, "CANTIDAD DE GESTIONES QUE DEMORARON MAS DE 30 DIAS");
+                const rEmisionRP = findRowByLabel(resumen, "CANTIDAD DE EMISION DE RP");
+
+                // Datos para el gráfico mensual (Enero a Diciembre)
+                const dataMensualCH = extractMonthlyData(rTotalCH);
+                const dataMensualDemoras = extractMonthlyData(rMas30);
+                const dataMensualRP = extractMonthlyData(rEmisionRP);
+
+                // Totales Anuales (Última columna o sumatoria)
+                const totalCHAnual = dataMensualCH.reduce((a, b) => a + b, 0);
+                const totalDemorasAnual = dataMensualDemoras.reduce((a, b) => a + b, 0);
+                const totalRPAnual = dataMensualRP.reduce((a, b) => a + b, 0);
+
+                document.getElementById('kpi-mas-30').innerText = totalDemorasAnual;
+                document.getElementById('kpi-rp').innerText = totalRPAnual;
+                
+                const eficienciaPrc = totalCHAnual > 0 ? ((totalCHAnual - totalDemorasAnual) / totalCHAnual) * 100 : 0;
+                document.getElementById('txt-eficiencia').innerText = eficienciaPrc.toFixed(1) + "% Rendimiento";
+
+                // 3. ACTUALIZAR INTERFAZ Y GRÁFICOS
+                document.getElementById('td-propia-cant').innerText = propiaCant;
+                document.getElementById('td-propia-monto').innerText = formatGuaranies(propiaMonto);
+                document.getElementById('td-camping-cant').innerText = campingCant;
+                document.getElementById('td-camping-monto').innerText = formatGuaranies(campingMonto);
+                document.getElementById('td-sin-cant').innerText = sinPagoCant;
+                document.getElementById('td-sin-monto').innerText = formatGuaranies(sinPagoMonto);
+                document.getElementById('td-senado-cant').innerText = senadoCant;
+                document.getElementById('td-senado-monto').innerText = formatGuaranies(senadoMonto);
+                document.getElementById('td-total-cant').innerText = totalPendientesCant;
+                document.getElementById('td-total-monto').innerText = formatGuaranies(totalPendientesMonto);
+
+                // Renderizar Gráficos
+                updateDonutChart(propiaCant, campingCant, sinPagoCant, senadoCant);
+                updateMixedChart(dataMensualCH, dataMensualRP, dataMensualDemoras);
+
+                // Generar Tablas Dinámicas
+                generateDynamicTable(data["REGISTRO DE PROPIEDAD"], "tabla-propiedad");
+                generateDynamicTable(data["CARNET DE HABILITACION"], "tabla-habilitacion");
+                generateDynamicTable(data["PERMISOS DE COMERCIALIZACION"], "tabla-comercializacion");
+
+                // Generar tabla de proceso 2026 aislando esa parte de la hoja resumen
+                generateDynamicTable(resumen, "tabla-rendimiento");
+
+                loader.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => loader.style.display = 'none', 500);
+                lucide.createIcons();
+
+            } catch (error) {
+                console.error("Error Detallado:", error);
+                errorMsg.innerHTML = `<i data-lucide="server-crash" class="inline w-5 h-5 mr-1 mb-1"></i> Falla en la conexión: ${error.message}`;
+                lucide.createIcons();
+            }
+        }
+
+        // ==========================================
+        // CONTROL DE PESTAÑAS Y BUSCADOR
+        // ==========================================
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                el.classList.add('text-slate-500', 'hover:bg-slate-100');
+            });
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-100');
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+
+            const titulos = {
+                'resumen': 'Panel Gerencial 360°',
+                'rendimiento': 'Rendimiento Operativo 2026',
+                'propiedad': 'Base de Datos: Registro de Propiedad',
+                'habilitacion': 'Base de Datos: Carnet de Habilitación',
+                'comercializacion': 'Base de Datos: Comercialización'
+            };
+            document.getElementById('main-title').innerText = titulos[tabId];
+        }
+
+        function filterTables() {
+            const input = document.getElementById('globalSearch').value.toLowerCase();
+            document.querySelectorAll('.searchable-row').forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
+            });
+        }
+    </script>
+</head>
+<body class="text-slate-800 flex h-screen overflow-hidden" onload="fetchLiveSheetsData();">
+
+    <div id="loader" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center gap-6 transition-all duration-500">
+        <div class="relative flex items-center justify-center w-20 h-20">
+            <div class="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <i data-lucide="database" class="w-8 h-8 text-blue-400 animate-pulse"></i>
+        </div>
+        <div class="text-center">
+            <h2 class="text-xl font-black text-white tracking-tight">DIGEMABEL <span class="text-blue-500">PRO</span></h2>
+            <p class="text-sm text-slate-400 mt-2 font-medium">Sincronizando flujos de datos en tiempo real...</p>
+        </div>
+        <span id="error-msg" class="text-sm text-red-400 font-bold max-w-lg text-center px-4 mt-2"></span>
+    </div>
+
+    <aside class="w-[280px] bg-white flex flex-col border-r border-slate-200 shadow-xl z-20">
+        <div class="p-6 border-b border-slate-100 flex items-center justify-center h-28">
+            <img src="LOGOC44.png" alt="Logo C44" class="max-h-16 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105" onerror="this.src='https://via.placeholder.com/180x80?text=LOGO+C44'">
+        </div>
+        
+        <nav class="flex-1 p-5 space-y-2 overflow-y-auto">
+            <p class="px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Módulos Analíticos</p>
+            
+            <button id="btn-resumen" onclick="switchTab('resumen')" class="nav-btn w-full flex items-center gap-3 px-4 py-3.5 text-sm font-bold rounded-xl bg-blue-600 text-white shadow-md transition-all">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i> Resumen 360°
+            </button>
+
+            <button id="btn-rendimiento" onclick="switchTab('rendimiento')" class="nav-btn w-full flex items-center gap-3 px-4 py-3.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
+                <i data-lucide="trending-up" class="w-5 h-5"></i> Rendimiento 2026
+            </button>
+            
+            <div class="my-4 border-t border-slate-100"></div>
+            <p class="px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 mt-4">Bases de Datos Brutas</p>
+
+            <button id="btn-propiedad" onclick="switchTab('propiedad')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
+                <i data-lucide="file-check-2" class="w-5 h-5"></i> Registro Propiedad
+            </button>
+            
+            <button id="btn-habilitacion" onclick="switchTab('habilitacion')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
+                <i data-lucide="id-card" class="w-5 h-5"></i> Carnet Habilitación
+            </button>
+
+            <button id="btn-comercializacion" onclick="switchTab('comercializacion')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
+                <i data-lucide="shopping-cart" class="w-5 h-5"></i> Comercialización
+            </button>
+        </nav>
+    </aside>
+
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
+        
+        <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-5 flex justify-between items-center z-10 sticky top-0">
+            <div class="flex items-center gap-4">
+                <h1 id="main-title" class="text-2xl font-black text-slate-800 tracking-tight">Panel Gerencial 360°</h1>
+                <span class="bg-emerald-100 text-emerald-700 text-[10px] px-3 py-1 rounded-full font-black flex items-center gap-1.5 uppercase tracking-widest border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> LIVE
+                </span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="relative group">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                    <input type="text" id="globalSearch" onkeyup="filterTables()" placeholder="Filtro global..." class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-72 shadow-sm placeholder-slate-400">
+                </div>
+                <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-900 text-white p-2.5 rounded-xl shadow-md transition-all group" title="Recargar Datos">
+                    <i data-lucide="refresh-cw" class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 space-y-8">
+            
+            <section id="tab-resumen" class="tab-content active space-y-8">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div class="glass-card border border-red-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Demoras >30 Días</p>
+                                <h3 id="kpi-mas-30" class="text-4xl font-black text-red-600">0</h3>
+                            </div>
+                            <div class="bg-red-50 p-3 rounded-xl text-red-500 shadow-inner"><i data-lucide="siren" class="w-6 h-6"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card border border-blue-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Activos</p>
+                                <h3 id="kpi-cartera-total" class="text-4xl font-black text-blue-900">0</h3>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded-xl text-blue-600 shadow-inner"><i data-lucide="users" class="w-6 h-6"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card border border-purple-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Emisiones RP (Año)</p>
+                                <h3 id="kpi-rp" class="text-4xl font-black text-purple-600">0</h3>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded-xl text-purple-600 shadow-inner"><i data-lucide="file-badge" class="w-6 h-6"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card border border-emerald-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group bg-gradient-to-br from-white to-emerald-50/30">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Capital Pendiente</p>
+                                <h3 id="val-cartera-monto" class="text-3xl font-black text-emerald-600 mt-1">₲ 0</h3>
+                                <p id="txt-eficiencia" class="text-xs font-bold text-emerald-600 mt-2 flex items-center gap-1"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i> %</p>
+                            </div>
+                            <div class="bg-emerald-100 p-3 rounded-xl text-emerald-600 shadow-inner"><i data-lucide="coins" class="w-6 h-6"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card border border-slate-200 rounded-2xl p-6 shadow-sm w-full">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i> Tendencias Operativas 2026 (CH vs RP vs Demoras)
+                        </h3>
+                    </div>
+                    <div class="w-full h-72">
+                        <canvas id="mixedChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <div class="lg:col-span-2 glass-card border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
+                        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+                            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
+                                <i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Facturación
+                            </h3>
+                        </div>
+                        <div class="p-0 overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-[10px] uppercase bg-slate-100/50 text-slate-500 font-black tracking-widest">
+                                    <tr>
+                                        <th class="py-4 px-6">Tipo de Trámite</th>
+                                        <th class="py-4 px-6 text-center">Volumen</th>
+                                        <th class="py-4 px-6 text-right">Monto Neto</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-slate-700 font-medium">
+                                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                        <td class="py-4 px-6 flex items-center gap-3"><div class="w-3 h-3 rounded bg-blue-500 shadow-sm"></div> Gestión Propia</td>
+                                        <td id="td-propia-cant" class="py-4 px-6 text-center font-bold text-slate-900">0</td>
+                                        <td id="td-propia-monto" class="py-4 px-6 text-right">0</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                                        <td class="py-4 px-6 flex items-center gap-3"><div class="w-3 h-3 rounded bg-purple-500 shadow-sm"></div> Gestión de Camping</td>
+                                        <td id="td-camping-cant" class="py-4 px-6 text-center font-bold text-slate-900">0</td>
+                                        <td id="td-camping-monto" class="py-4 px-6 text-right">0</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-50 hover:bg-red-50/50 transition-colors bg-red-50/20">
+                                        <td class="py-4 px-6 flex items-center gap-3 text-red-600 font-bold"><div class="w-3 h-3 rounded bg-red-500 shadow-sm animate-pulse"></div> Sin Pago Realizado</td>
+                                        <td id="td-sin-cant" class="py-4 px-6 text-center font-black text-red-600">0</td>
+                                        <td id="td-sin-monto" class="py-4 px-6 text-right font-black text-red-600">0</td>
+                                    </tr>
+                                    <tr class="border-b border-slate-200 hover:bg-slate-50 transition-colors">
+                                        <td class="py-4 px-6 flex items-center gap-3"><div class="w-3 h-3 rounded bg-amber-500 shadow-sm"></div> Clientes Señados</td>
+                                        <td id="td-senado-cant" class="py-4 px-6 text-center font-bold text-slate-900">0</td>
+                                        <td id="td-senado-monto" class="py-4 px-6 text-right">0</td>
+                                    </tr>
+                                    <tr class="bg-slate-800 text-white">
+                                        <td class="py-5 px-6 font-black uppercase text-xs tracking-widest rounded-bl-xl">Totales</td>
+                                        <td id="td-total-cant" class="py-5 px-6 text-center font-black text-lg">0</td>
+                                        <td id="td-total-monto" class="py-5 px-6 text-right font-black text-lg text-emerald-400 rounded-br-xl">0</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="glass-card border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-center relative">
+                        <h3 class="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest text-center w-full">Distribución Visual</h3>
+                        <div class="w-full max-w-[220px] mx-auto"><canvas id="donutChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-rendimiento" class="tab-content space-y-4">
+                <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl flex items-center gap-3 shadow-sm mb-6">
+                    <i data-lucide="info" class="w-5 h-5 flex-shrink-0"></i>
+                    <p class="text-sm font-medium">Esta tabla refleja todo el flujo de <strong>PROCESO 2026</strong>. Los errores de fórmula del archivo original (#VALUE!) se marcan en rojo automáticamente.</p>
+                </div>
+                <div id="tabla-rendimiento"></div>
+            </section>
+
+            <section id="tab-propiedad" class="tab-content space-y-4">
+                <div id="tabla-propiedad"></div>
+            </section>
+
+            <section id="tab-habilitacion" class="tab-content space-y-4">
+                <div id="tabla-habilitacion"></div>
+            </section>
+
+            <section id="tab-comercializacion" class="tab-content space-y-4">
+                <div id="tabla-comercializacion"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <script>
+        let donutObj, mixedObj;
+
+        function updateDonutChart(propia, camping, sinPago, senado) {
+            const ctx = document.getElementById('donutChart').getContext('2d');
+            if (donutObj) donutObj.destroy();
+            donutObj = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Propia', 'Camping', 'Sin Pago', 'Señado'],
+                    datasets: [{
+                        data: [propia, camping, sinPago, senado],
+                        backgroundColor: ['#3b82f6', '#a855f7', '#ef4444', '#f59e0b'],
+                        borderColor: '#ffffff',
+                        borderWidth: 3, hoverOffset: 5
+                    }]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: 'Inter', size: 10, weight: 'bold' } } } }, 
+                    cutout: '75%' 
+                }
+            });
+        }
+
+        // EL NUEVO GRÁFICO DINÁMICO DE 2026
+        function updateMixedChart(dataCH, dataRP, dataDemoras) {
+            const ctx = document.getElementById('mixedChart').getContext('2d');
+            if (mixedObj) mixedObj.destroy();
+            
+            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+            
+            mixedObj = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: meses,
+                    datasets: [
+                        {
+                            label: 'Demoras >30 Días',
+                            type: 'line',
+                            data: dataDemoras,
+                            borderColor: '#ef4444',
+                            backgroundColor: '#ef4444',
+                            borderWidth: 3,
+                            tension: 0.3, // Curva suave
+                            pointBackgroundColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Gestiones CH',
+                            data: dataCH,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Emisiones RP',
+                            data: dataRP,
+                            backgroundColor: '#a855f7',
+                            borderRadius: 6,
+                            borderSkipped: false,
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top', labels: { usePointStyle: true, font: { family: 'Inter', weight: 'bold' } } },
+                        tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleFont: { family: 'Inter', size: 13 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, cornerRadius: 8 }
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { dash: [4, 4] } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
