@@ -3,34 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Gerencial Avanzado - C44 DIGEMABEL</title>
+    <title>GESTION REGULATORIA C44 - GESTIONES</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        .tab-content { display: none; opacity: 0; transform: translateY(10px); transition: all 0.4s ease; }
-        .tab-content.active { display: block; opacity: 1; transform: translateY(0); }
-
-        .saas-table th { position: sticky; top: 0; background-color: #f8fafc; z-index: 10; }
         
-        /* Efecto Glassmorphism suave para las tarjetas */
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease; }
+        .tab-content.active { display: block; opacity: 1; }
+        
+        .glass-card { background: #ffffff; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; border-radius: 12px; }
+        .clickable-card { cursor: pointer; transition: all 0.2s ease; border-width: 2px; }
+        .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
+        
+        /* Tablas */
+        .modern-table-container { width: 100%; overflow-x: auto; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .modern-table { width: 100%; border-collapse: collapse; text-align: left; }
+        .modern-table th { background-color: #f1f5f9; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 16px; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10; cursor: pointer; white-space: nowrap; }
+        .modern-table th:hover { background-color: #e2e8f0; }
+        .modern-table td { padding: 12px 16px; font-size: 13px; color: #1e293b; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
+        .modern-table tbody tr.searchable-row:nth-child(even) { background-color: #f8fafc; }
+        .modern-table tbody tr.searchable-row:hover { background-color: #eff6ff; }
+        
+        .gestiones-block { margin-bottom: 2rem; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .gestiones-header { background: #1e293b; color: #fff; padding: 12px 16px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+        .gestiones-table { width: 100%; border-collapse: collapse; }
+        .gestiones-table th { background: #f8fafc; padding: 10px; font-size: 11px; color: #64748b; text-align: center; border-bottom: 1px solid #e2e8f0; font-weight: 600; }
+        .gestiones-table td { padding: 12px 10px; font-size: 14px; text-align: center; font-weight: 600; border-bottom: 1px solid #f1f5f9; color: #334155; }
+        
+        .filter-select { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #475569; outline: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); pointer-events: none; }
+        .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        
+        /* Tooltips Inteligentes (Solucionado para que no bloquee el clic) */
+        .tooltip-container { position: relative; display: inline-block; }
+        .info-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(10px); background-color: #1e293b; color: white; text-align: left; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; width: 220px; z-index: 50; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); pointer-events: none; line-height: 1.4; text-transform: none; letter-spacing: normal; }
+        .info-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
+        .tooltip-container:hover .info-tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
+
+        @media print {
+            body { background-color: #fff; color: #000; font-size: 10pt; }
+            aside, header, button, select, .filter-select, #loader, .sync-indicator, .info-tooltip, [title*="Clic"] { display: none !important; }
+            main { width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
+            .tab-content { display: block !important; opacity: 1 !important; overflow: visible !important; }
+            .glass-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-inside: avoid; }
+        }
     </style>
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V15";
+        let rawDataCache = null; 
 
-        // ==========================================
-        // FUNCIONES DE LIMPIEZA Y EXTRACCIÓN
-        // ==========================================
+        function normalizeText(text) {
+            if (!text) return "";
+            return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        }
+
+        function setSafeText(elementId, text) {
+            const el = document.getElementById(elementId);
+            if (el) el.innerText = text;
+        }
+
         function cleanAndParseNumber(cellValue) {
             if (!cellValue || String(cellValue).includes("#VALUE!") || String(cellValue).includes("#DIV/0!")) return 0;
             let cleanStr = String(cellValue).replace(/[.₲\s%]/g, '').replace(',', '.').trim();
@@ -43,497 +85,885 @@
             return "₲ " + Math.round(val).toLocaleString('es-PY');
         }
 
+        function formatBeautifulDate(str) {
+            if (typeof str === 'string' && str.match(/^\d{4}-\d{2}-\d{2}T/)) {
+                const date = new Date(str);
+                return date.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+            return str;
+        }
+
+        function createBadge(text) {
+            const t = String(text).trim().toUpperCase();
+            if (t.includes('PROPIA')) return `<span class="bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
+            if (t.includes('CAMPING')) return `<span class="bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
+            if (t.includes('SIN PAGO')) return `<span class="bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
+            if (t.includes('SEÑADO') || t.includes('SENADO')) return `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
+            if (t === 'OK' || t === 'RENOVADO' || t === 'RETIRADO DEFINITIVO') return `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
+            if (t === 'FALTA' || t === 'PENDIENTE') return `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
+            return text;
+        }
+
         function findRowByLabel(matrix, keyword) {
             if (!matrix || !Array.isArray(matrix)) return null;
-            return matrix.find(row => row && Array.isArray(row) && row.some(cell => String(cell).toLowerCase().includes(keyword.toLowerCase())));
+            const normKeyword = normalizeText(keyword);
+            return matrix.find(row => row && Array.isArray(row) && row.some(cell => normalizeText(cell).includes(normKeyword)));
         }
 
         function extractNumbersFromRow(row) {
             if (!row) return [];
-            let numbers = [];
-            for (let i = 1; i < row.length; i++) {
-                let val = cleanAndParseNumber(row[i]);
-                if (String(row[i]).trim() !== '' && String(row[i]).trim() !== '₲' && String(row[i]).trim() !== '-') {
-                    numbers.push(val);
-                }
-            }
-            return numbers;
+            return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
         }
 
-        // Extractor específico para los meses (Enero a Diciembre = índices 1 al 12)
         function extractMonthlyData(row) {
             let data = [];
             if(!row) return Array(12).fill(0);
-            for(let i=1; i<=12; i++) {
-                data.push(cleanAndParseNumber(row[i]));
+            for(let i=1; i<=12; i++) data.push(cleanAndParseNumber(row[i]));
+            return data;
+        }
+
+        // --- EXTRACTOR INTELIGENTE PARA GRÁFICOS ---
+        function extractSmartMonthlyData(resumenMatrix, keyword) {
+            let data = Array(12).fill(0);
+            const rowIdx = resumenMatrix.findIndex(r => r && Array.isArray(r) && r.some(c => normalizeText(String(c)).includes(normalizeText(keyword))));
+            if (rowIdx === -1) return data;
+            
+            const targetRow = resumenMatrix[rowIdx];
+            let headerRow = null;
+            for (let i = rowIdx - 1; i >= 0; i--) {
+                const rStr = normalizeText(resumenMatrix[i].join(' '));
+                if (rStr.includes('enero') && rStr.includes('febrero')) {
+                    headerRow = resumenMatrix[i];
+                    break;
+                }
+            }
+            
+            if (headerRow) {
+                const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                meses.forEach((mes, idx) => {
+                    const colIdx = headerRow.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes));
+                    if (colIdx !== -1 && targetRow[colIdx] !== undefined) {
+                        data[idx] = cleanAndParseNumber(targetRow[colIdx]);
+                    }
+                });
+            } else {
+                for(let i=0; i<12; i++) data[i] = cleanAndParseNumber(targetRow[i+1]);
             }
             return data;
         }
 
-        // ==========================================
-        // GENERADOR DE TABLAS HERMOSEADAS
-        // ==========================================
-        function generateDynamicTable(matrix, containerId) {
-            const container = document.getElementById(containerId);
-            if (!matrix || matrix.length === 0) {
-                container.innerHTML = `<div class="p-10 text-center text-gray-400"><i data-lucide="folder-search" class="w-16 h-16 mx-auto mb-4 opacity-50"></i><p class="font-medium">No se encontraron registros de datos.</p></div>`;
+        function sortTable(thElement) {
+            const table = thElement.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr.searchable-row'));
+            const colIndex = Array.from(thElement.parentNode.children).indexOf(thElement);
+            
+            let isAsc = thElement.classList.contains('asc');
+            table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
+            thElement.classList.add(isAsc ? 'desc' : 'asc');
+            isAsc = !isAsc;
+
+            rows.sort((a, b) => {
+                const aCol = a.children[colIndex];
+                const bCol = b.children[colIndex];
+                if(!aCol || !bCol) return 0;
+                let aText = aCol.innerText.trim();
+                let bText = bCol.innerText.trim();
+                let aNum = parseFloat(aText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                let bNum = parseFloat(bText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+
+                if (!isNaN(aNum) && !isNaN(bNum)) return isAsc ? aNum - bNum : bNum - aNum;
+                return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        function purifyMatrix(matrix) {
+            if (!matrix || matrix.length === 0) return [];
+            let rows = matrix.filter(row => {
+                const isAllEmpty = row.every(c => String(c).trim() === '');
+                const isJustNumbers = row.every(c => !isNaN(c) || String(c).trim() === '');
+                return !isAllEmpty && (!isJustNumbers || row[0] !== ''); 
+            });
+            if(rows.length === 0) return [];
+
+            let colCount = rows[0].length;
+            let colsToKeep = [];
+            for(let c=0; c<colCount; c++) {
+                let hasRealData = false;
+                for(let r=0; r<rows.length; r++) {
+                    const val = String(rows[r][c]).trim().toUpperCase();
+                    if(val !== '' && val !== 'X' && val !== '-') { hasRealData = true; break; }
+                }
+                if(hasRealData) colsToKeep.push(c);
+            }
+            return rows.map(row => row.filter((_, c) => colsToKeep.includes(c)));
+        }
+
+        function copyToClipboard(cliente, dias, estado, tabName) {
+            const msg = `⚠️ *Alerta DIGEMABEL*\nCliente: ${cliente}\nTrámite: ${tabName.toUpperCase()}\nEstado: ${estado}\nDemora Actual: ${dias} días.\nPor favor, verificar estatus urgentemente.`;
+            navigator.clipboard.writeText(msg).then(() => {
+                const toast = document.getElementById('toast');
+                toast.innerHTML = `<i data-lucide="check-circle" class="inline w-5 h-5 mr-2 text-emerald-400"></i> ¡Mensaje copiado para WhatsApp!`;
                 lucide.createIcons();
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            });
+        }
+
+        function exportTableToCSV(tabName) {
+            const table = document.getElementById(`table-${tabName}`);
+            if (!table) return;
+            let csv = [];
+            const rows = table.querySelectorAll('tr');
+            for (let i = 0; i < rows.length; i++) {
+                if(rows[i].style.display === 'none') continue; 
+                let row = [], cols = rows[i].querySelectorAll('td, th');
+                for (let j = 0; j < cols.length; j++) {
+                    let text = cols[j].innerText.replace(/"/g, '""'); 
+                    row.push('"' + text + '"');
+                }
+                csv.push(row.join(','));
+            }
+            let csvFile = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], {type: "text/csv;charset=utf-8;"});
+            let link = document.createElement("a");
+            link.download = `Reporte_${tabName}_${new Date().toISOString().slice(0,10)}.csv`;
+            link.href = window.URL.createObjectURL(csvFile);
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- MOTORES DE RENDERIZADO VISUAL ---
+        function renderAlertas(matrix) {
+            const container = document.getElementById('alertas-container');
+            const centerNotification = document.getElementById('center-notification');
+            if (!matrix || matrix.length === 0) return;
+
+            let html = '';
+            let criticalNotificationHtml = '';
+            let startIndex = matrix.findIndex(row => row.some(c => normalizeText(String(c)).includes('fecha de vencimiento')));
+            
+            if (startIndex !== -1) {
+                const headerRow = matrix[startIndex];
+                const itemCol = headerRow.findIndex(c => normalizeText(String(c)).includes('item'));
+                const dateCol = headerRow.findIndex(c => normalizeText(String(c)).includes('vencimiento'));
+                const c1 = itemCol !== -1 ? itemCol : 0;
+                const c2 = dateCol !== -1 ? dateCol : 1;
+
+                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">`;
+                
+                for (let i = startIndex + 1; i < matrix.length; i++) {
+                    const row = matrix[i];
+                    const itemStr = String(row[c1] || '').trim();
+                    const dateStr = String(row[c2] || '').trim();
+                    if (itemStr === '') continue; 
+                    if (normalizeText(itemStr).includes('resumen') || normalizeText(itemStr).includes('total')) break; 
+
+                    let prettyDate = formatBeautifulDate(dateStr);
+                    let daysLeft = 999; 
+
+                    if(dateStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
+                        const diff = new Date(dateStr) - new Date();
+                        daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                    } else {
+                        const numbers = extractNumbersFromRow(row);
+                        if(numbers.length > 0) daysLeft = numbers[0]; 
+                    }
+
+                    let borderClass = "border-l-emerald-500"; let bgIconClass = "bg-emerald-50 text-emerald-500"; let textClass = "text-emerald-600"; let statusText = "Vigente"; let icon = "check-circle";
+
+                    if (daysLeft < 0 || daysLeft <= 30) { 
+                        borderClass = "border-l-rose-500"; bgIconClass = "bg-rose-50 text-rose-500"; textClass = "text-rose-600"; statusText = daysLeft < 0 ? "Vencido" : "Crítico"; icon = "alert-octagon";
+                        
+                        criticalNotificationHtml += `
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl shadow-sm animate-pulse mb-3 gap-3">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="shield-alert" class="w-6 h-6 text-rose-600 flex-shrink-0"></i>
+                                <div>
+                                    <span class="text-xs font-black uppercase tracking-wide block">Alerta de Gobernanza Legal</span>
+                                    <span class="text-sm font-medium">El ítem <strong>"${itemStr}"</strong> registra estatus <strong>${statusText} (${daysLeft} días)</strong>.</span>
+                                </div>
+                            </div>
+                            <button onclick="switchTab('alertas')" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-sm w-full sm:w-auto">Gestionar Alerta</button>
+                        </div>`;
+                    } else if (daysLeft <= 90) { 
+                        borderClass = "border-l-amber-500"; bgIconClass = "bg-amber-50 text-amber-500"; textClass = "text-amber-600"; statusText = "Próximo a Vencer"; icon = "clock";
+                    }
+
+                    if (isNaN(daysLeft) && prettyDate === '') { statusText = "Sin fecha"; textClass = "text-slate-400"; borderClass = "border-l-slate-300"; bgIconClass = "bg-slate-50 text-slate-400"; icon = "help-circle"; }
+
+                    html += `
+                    <div class="glass-card ${borderClass} border-l-4 p-5 flex items-start gap-4 hover:-translate-y-1 transition-transform">
+                        <div class="${bgIconClass} p-2.5 rounded-xl shadow-inner"><i data-lucide="${icon}" class="w-6 h-6"></i></div>
+                        <div><h4 class="text-sm font-black text-slate-800">${itemStr}</h4><p class="text-xs font-semibold text-slate-500 mt-1">Vence: <span class="${textClass}">${prettyDate || 'N/A'}</span></p>${daysLeft !== 999 && !isNaN(daysLeft) ? `<p class="text-[10px] font-black ${textClass} uppercase tracking-widest mt-2 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100">${statusText} (${daysLeft} días)</p>` : ''}</div>
+                    </div>`;
+                }
+                html += `</div>`;
+            }
+            container.innerHTML = html !== '' ? html : `<p class="text-sm text-slate-500 font-medium">No se detectaron alertas programadas.</p>`;
+            
+            if(criticalNotificationHtml !== '') {
+                centerNotification.innerHTML = criticalNotificationHtml;
+                centerNotification.classList.remove('hidden');
+            } else {
+                centerNotification.classList.add('hidden');
+            }
+        }
+
+        function renderGestiones2026(rawMatrix, containerId) {
+            const container = document.getElementById(containerId);
+            if (!rawMatrix || rawMatrix.length === 0) { container.innerHTML = `<p class="text-slate-500">Sin datos.</p>`; return; }
+            const mesesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            const mesesDisplay = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            let html = ''; let currentBlockTitle = ''; let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11]; 
+            
+            rawMatrix.forEach(row => {
+                const filledCells = row.filter(c => String(c).trim() !== "");
+                if (filledCells.length === 0) return;
+                const rowStr = normalizeText(row.join(' '));
+                if (rowStr.includes('enero') && rowStr.includes('febrero')) {
+                    monthIndices = mesesNombres.map(mes => row.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes)));
+                    let firstFound = monthIndices.find(idx => idx !== -1);
+                    if (firstFound !== undefined) { for(let i=0; i<12; i++) { if(monthIndices[i] === -1) monthIndices[i] = firstFound + i; } }
+                    return; 
+                }
+                if (filledCells.length === 1 && isNaN(parseFloat(filledCells[0]))) { currentBlockTitle = String(filledCells[0]).toUpperCase(); return; }
+
+                if (currentBlockTitle !== '' && filledCells.some(c => !isNaN(parseFloat(c)))) {
+                    html += `
+                    <div class="gestiones-block">
+                        <div class="gestiones-header">${currentBlockTitle}</div>
+                        <div class="overflow-x-auto">
+                            <table class="gestiones-table">
+                                <thead><tr>`;
+                    mesesDisplay.forEach(m => html += `<th>${m}</th>`);
+                    html += `</tr></thead><tbody><tr>`;
+                    
+                    for (let i = 0; i < 12; i++) {
+                        let colIdx = monthIndices[i];
+                        let val = (colIdx !== -1 && row[colIdx] !== undefined) ? String(row[colIdx]).trim() : '';
+                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) {
+                            html += `<td><span class="text-slate-300 font-normal">-</span></td>`;
+                        } else {
+                            let num = parseFloat(val);
+                            if (!isNaN(num) && num !== 0) html += `<td class="font-bold text-slate-800">${num}</td>`;
+                            else html += `<td><span class="text-slate-300 font-normal">0</span></td>`;
+                        }
+                    }
+                    html += `</tr></tbody></table></div></div>`;
+                    currentBlockTitle = ''; 
+                }
+            });
+            container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
+        }
+
+        function renderDatabaseTable(rawMatrix, containerId, tabName) {
+            const container = document.getElementById(containerId);
+            const matrix = purifyMatrix(rawMatrix);
+            
+            if (!matrix || matrix.length === 0) {
+                container.innerHTML = `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>No hay registros.</p></div>`;
                 return;
             }
             
-            let html = `<div class='overflow-auto max-h-[650px] rounded-xl border border-gray-200 bg-white shadow-sm'>
-                        <table class='w-full text-sm text-left text-gray-600 saas-table border-collapse'>`;
-            
-            matrix.forEach((row, rIdx) => {
-                const isEveryCellEmpty = row.every(c => String(c).trim() === "");
-                if (isEveryCellEmpty) return; 
+            let headers = matrix[0];
+            let dataRows = matrix.slice(1);
 
-                const isHeader = rIdx === 0 || String(row[0]).toLowerCase().includes('proceso') || String(row[0]).toLowerCase().includes('item');
-                const trClass = isHeader 
-                    ? "bg-slate-50 text-slate-700 font-bold uppercase text-[10px] tracking-widest border-b-2 border-gray-200" 
-                    : "hover:bg-blue-50/40 border-b border-gray-100 transition-colors duration-150 searchable-row";
+            let diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
+            let estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado') || t.includes('tipo'); });
 
-                html += `<tr class="${trClass}">`;
+            let tableHtml = `<div class='modern-table-container'><table class='modern-table' id='table-${tabName}'><thead><tr>`;
+            headers.forEach(h => { tableHtml += `<th onclick="sortTable(this)">${String(h).trim()} <i data-lucide="chevron-down" class="inline w-3 h-3 text-slate-300"></i></th>`; });
+            tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
+
+            dataRows.forEach(row => {
+                tableHtml += `<tr class="searchable-row" data-tab="${tabName}">`;
+                
+                let clienteName = "";
+                let diasValue = diasColIdx !== -1 ? row[diasColIdx] : "N/A";
+                let estadoValue = estadoColIdx !== -1 ? row[estadoColIdx] : "N/A";
+
                 row.forEach((cell, cIdx) => {
-                    const cellStr = String(cell).trim();
-                    let extraClass = "";
-                    
-                    if (cellStr.includes("#VALUE!") || cellStr.includes("#DIV/0!")) {
-                        extraClass = "text-red-500 font-bold bg-red-50/80 px-2 py-1 rounded shadow-inner text-xs inline-block mt-1";
-                    } else if (cellStr.includes("₲")) {
-                        extraClass = "font-bold text-slate-800 text-right pr-4";
+                    let rawStr = String(cell).trim();
+                    let cellStr = formatBeautifulDate(rawStr);
+                    let alignClass = "text-left";
+                    let innerHtml = cellStr;
+
+                    if (rawStr.includes("#VALUE!") || rawStr.includes("#DIV/0!")) {
+                        innerHtml = `<span class="text-slate-300">-</span>`; alignClass = "text-center";
+                    } else if (rawStr.includes("₲")) {
+                        alignClass = "text-right font-bold text-slate-700";
+                    } else if (isNaN(parseFloat(rawStr)) && rawStr !== '') {
+                        innerHtml = createBadge(cellStr);
+                    } else if (!isNaN(parseFloat(rawStr)) && rawStr !== '') {
+                        alignClass = "text-center font-medium text-slate-700";
+                    }
+                    if (cIdx === 0) alignClass = "text-left font-semibold text-slate-800"; 
+
+                    if (isNaN(parseFloat(rawStr)) && rawStr.length > 5 && clienteName === "") {
+                        clienteName = rawStr.replace(/"/g, '').replace(/'/g, '');
                     }
 
-                    if (isHeader) {
-                        html += `<th class='py-4 px-5 whitespace-nowrap ${cIdx === 0 ? 'pl-6' : ''}'>${cellStr}</th>`;
-                    } else {
-                        html += `<td class='py-3 px-5 ${cIdx === 0 ? 'pl-6 font-semibold text-slate-700' : ''}'><span class="${extraClass}">${cellStr}</span></td>`;
+                    if (innerHtml === cellStr && isNaN(parseFloat(rawStr)) && rawStr.length > 5 && !tableHtml.includes(`onclick="copyToClipboard`)) {
+                        innerHtml = `<div class="flex items-center justify-between gap-3 group/btn">
+                                        <span class="truncate max-w-xs block" title="${cellStr}">${cellStr}</span>
+                                        <button onclick="copyToClipboard('${clienteName}', '${diasValue}', '${estadoValue}', '${tabName}')" class="text-slate-400 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 p-1.5 rounded-md opacity-0 group-hover/btn:opacity-100 transition-all flex-shrink-0" title="Copiar Datos para Reclamo">
+                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                     </div>`;
                     }
+
+                    tableHtml += `<td class="${alignClass}" data-raw="${normalizeText(rawStr)}">${innerHtml}</td>`;
                 });
-                html += `</tr>`;
+                tableHtml += `</tr>`;
             });
-            html += `</table></div>`;
-            container.innerHTML = html;
+            tableHtml += `</tbody></table></div>`;
+
+            let filtersHtml = `
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm print:hidden">
+                <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto" id="filters-${tabName}">
+                    <div class="bg-blue-50 p-2 rounded-lg border border-blue-100 tooltip-container">
+                        <i data-lucide="filter" class="w-4 h-4 text-blue-500 cursor-help"></i>
+                        <span class="info-tooltip">Filtros Automáticos detectados de tu Excel</span>
+                    </div>`;
+            
+            headers.forEach((h, colIndex) => {
+                const title = String(h).toUpperCase();
+                if (title.includes('DÍA') || title.includes('DIA') || title.includes('ESPERA')) {
+                    filtersHtml += `
+                    <select class="filter-select" data-col="${colIndex}" data-type="range" onchange="applyAllFilters('${tabName}')">
+                        <option value="">Rango: ${title}</option>
+                        <option value="<30">Menos de 30 días</option>
+                        <option value=">30">Más de 30 días</option>
+                        <option value=">60">Más de 60 días</option>
+                        <option value=">90">Más de 90 días</option>
+                    </select>`;
+                } else if (title === 'AÑO' || title === 'MES' || title.includes('ESTADO') || title.includes('CATEGORIA') || title.includes('TIPO') || title.includes('VENDEDOR')) {
+                    let uniqueValues = new Set();
+                    dataRows.forEach(r => {
+                        let val = String(r[colIndex] || '').trim();
+                        if(val !== '' && !val.includes('#')) uniqueValues.add(val);
+                    });
+                    let options = Array.from(uniqueValues).sort();
+                    if(options.length > 0 && options.length < 50) { 
+                        filtersHtml += `
+                        <select class="filter-select" data-col="${colIndex}" data-type="exact" onchange="applyAllFilters('${tabName}')">
+                            <option value="">Filtrar: ${title}</option>
+                            ${options.map(o => `<option value="${normalizeText(o)}">${o}</option>`).join('')}
+                        </select>`;
+                    }
+                }
+            });
+
+            filtersHtml += `
+                <button onclick="resetFilters('${tabName}')" class="text-xs font-bold text-slate-400 hover:text-rose-500 ml-1 flex items-center gap-1 transition-colors" title="Borrar filtros">
+                    <i data-lucide="x-circle" class="w-4 h-4"></i> Limpiar
+                </button>
+                </div>
+                
+                <div class="flex items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 flex-shrink-0">
+                    <div class="flex items-center gap-1.5"><i data-lucide="list" class="w-3.5 h-3.5 text-blue-500"></i> Registros: <span id="count-${tabName}" class="text-slate-800 text-sm">${dataRows.length}</span></div>
+                    <div class="w-px h-4 bg-slate-300 hidden md:block" id="sum-div-${tabName}"></div>
+                    <div class="flex items-center gap-1.5 hidden" id="sum-container-${tabName}"><i data-lucide="coins" class="w-3.5 h-3.5 text-emerald-500"></i> Total: <span id="sum-${tabName}" class="text-emerald-600 text-sm">₲ 0</span></div>
+                    <button onclick="exportTableToCSV('${tabName}')" class="ml-2 bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-700 transition flex items-center gap-1.5 shadow-sm" title="Descargar como Excel/CSV">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Exportar CSV</span>
+                    </button>
+                </div>
+            </div>`;
+
+            container.innerHTML = filtersHtml + tableHtml;
         }
 
         // ==========================================
-        // CEREBRO PRINCIPAL (FETCH API)
+        // FETCH DATA Y CORE
         // ==========================================
-        async function fetchLiveSheetsData() {
+        async function fetchLiveSheetsData(forceRefresh = false) {
             const loader = document.getElementById('loader');
             const errorMsg = document.getElementById('error-msg');
+            const retryBtn = document.getElementById('btn-retry');
             
+            if (!forceRefresh) {
+                const cachedData = sessionStorage.getItem(CACHE_KEY);
+                if (cachedData) {
+                    try { rawDataCache = JSON.parse(cachedData); renderData(rawDataCache); loader.style.display = 'none'; return; } 
+                    catch(e) { console.warn("Cache inválido."); }
+                }
+            }
+
             try {
+                loader.style.display = 'flex';
+                errorMsg.innerHTML = '';
+                retryBtn.classList.add('hidden');
+
                 const response = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
-                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-
+                if (!response.ok) throw new Error(`HTTP Error`);
                 const rawText = await response.text();
-                const data = JSON.parse(rawText);
-                const resumen = data["RESUMEN"];
-                if (!resumen) throw new Error("No se encontró la pestaña 'RESUMEN'.");
                 
-                // 1. EXTRACCIÓN DE CARTERA (FINANZAS)
-                const rPropia = findRowByLabel(resumen, "GESTION PROPIA");
-                const rCamping = findRowByLabel(resumen, "EN GESTION CAMPING");
-                const rSinPago = findRowByLabel(resumen, "SIN PAGO ALGUNO");
-                const rSenado = findRowByLabel(resumen, "SEÑADO");
+                try { rawDataCache = JSON.parse(rawText); } catch(e) { throw new Error("Posible bloqueo temporal de Google o error de conexión."); }
+                try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(rawDataCache)); } catch(e) { console.warn("Memoria llena"); }
 
-                const nPropia = extractNumbersFromRow(rPropia);
-                const nCamping = extractNumbersFromRow(rCamping);
-                const nSinPago = extractNumbersFromRow(rSinPago);
-                const nSenado = extractNumbersFromRow(rSenado);
+                renderData(rawDataCache);
 
-                const propiaCant = nPropia[0] || 0;   const propiaMonto = nPropia[1] || 0;
-                const campingCant = nCamping[0] || 0; const campingMonto = nCamping[1] || 0;
-                const sinPagoCant = nSinPago[0] || 0; const sinPagoMonto = nSinPago[1] || 0;
-                const senadoCant = nSenado[0] || 0;   const senadoMonto = nSenado[1] || 0;
-
-                const totalPendientesCant = propiaCant + campingCant + sinPagoCant + senadoCant;
-                const totalPendientesMonto = propiaMonto + campingMonto + sinPagoMonto + senadoMonto;
-
-                document.getElementById('kpi-cartera-total').innerText = totalPendientesCant;
-                document.getElementById('val-cartera-monto').innerText = formatGuaranies(totalPendientesMonto);
-                
-                // 2. EXTRACCIÓN DEL PROCESO 2026 (NUEVO SEGÚN CAPTURA)
-                const rTotalCH = findRowByLabel(resumen, "CANTIDAD DE GESTIONES DE DOCUMENTOS PARA CH");
-                const rMas30 = findRowByLabel(resumen, "CANTIDAD DE GESTIONES QUE DEMORARON MAS DE 30 DIAS");
-                const rEmisionRP = findRowByLabel(resumen, "CANTIDAD DE EMISION DE RP");
-
-                // Datos para el gráfico mensual (Enero a Diciembre)
-                const dataMensualCH = extractMonthlyData(rTotalCH);
-                const dataMensualDemoras = extractMonthlyData(rMas30);
-                const dataMensualRP = extractMonthlyData(rEmisionRP);
-
-                // Totales Anuales (Última columna o sumatoria)
-                const totalCHAnual = dataMensualCH.reduce((a, b) => a + b, 0);
-                const totalDemorasAnual = dataMensualDemoras.reduce((a, b) => a + b, 0);
-                const totalRPAnual = dataMensualRP.reduce((a, b) => a + b, 0);
-
-                document.getElementById('kpi-mas-30').innerText = totalDemorasAnual;
-                document.getElementById('kpi-rp').innerText = totalRPAnual;
-                
-                const eficienciaPrc = totalCHAnual > 0 ? ((totalCHAnual - totalDemorasAnual) / totalCHAnual) * 100 : 0;
-                document.getElementById('txt-eficiencia').innerText = eficienciaPrc.toFixed(1) + "% Rendimiento";
-
-                // 3. ACTUALIZAR INTERFAZ Y GRÁFICOS
-                document.getElementById('td-propia-cant').innerText = propiaCant;
-                document.getElementById('td-propia-monto').innerText = formatGuaranies(propiaMonto);
-                document.getElementById('td-camping-cant').innerText = campingCant;
-                document.getElementById('td-camping-monto').innerText = formatGuaranies(campingMonto);
-                document.getElementById('td-sin-cant').innerText = sinPagoCant;
-                document.getElementById('td-sin-monto').innerText = formatGuaranies(sinPagoMonto);
-                document.getElementById('td-senado-cant').innerText = senadoCant;
-                document.getElementById('td-senado-monto').innerText = formatGuaranies(senadoMonto);
-                document.getElementById('td-total-cant').innerText = totalPendientesCant;
-                document.getElementById('td-total-monto').innerText = formatGuaranies(totalPendientesMonto);
-
-                // Renderizar Gráficos
-                updateDonutChart(propiaCant, campingCant, sinPagoCant, senadoCant);
-                updateMixedChart(dataMensualCH, dataMensualRP, dataMensualDemoras);
-
-                // Generar Tablas Dinámicas
-                generateDynamicTable(data["REGISTRO DE PROPIEDAD"], "tabla-propiedad");
-                generateDynamicTable(data["CARNET DE HABILITACION"], "tabla-habilitacion");
-                generateDynamicTable(data["PERMISOS DE COMERCIALIZACION"], "tabla-comercializacion");
-
-                // Generar tabla de proceso 2026 aislando esa parte de la hoja resumen
-                generateDynamicTable(resumen, "tabla-rendimiento");
-
-                loader.classList.add('opacity-0', 'pointer-events-none');
-                setTimeout(() => loader.style.display = 'none', 500);
-                lucide.createIcons();
+                loader.classList.add('opacity-0');
+                setTimeout(() => loader.style.display = 'none', 300);
+                if(typeof lucide !== 'undefined') { lucide.createIcons(); }
 
             } catch (error) {
-                console.error("Error Detallado:", error);
-                errorMsg.innerHTML = `<i data-lucide="server-crash" class="inline w-5 h-5 mr-1 mb-1"></i> Falla en la conexión: ${error.message}`;
-                lucide.createIcons();
+                errorMsg.innerHTML = `⚠️ ${error.message}`;
+                retryBtn.classList.remove('hidden');
             }
         }
 
+        function retryFetch() {
+            sessionStorage.removeItem(CACHE_KEY);
+            document.getElementById('loader').classList.remove('opacity-0');
+            fetchLiveSheetsData(true);
+        }
+
+        function renderData(data) {
+            const resumen = data["RESUMEN"];
+            if (!resumen) return;
+            
+            renderAlertas(resumen);
+
+            const rPropia = findRowByLabel(resumen, "gestion propia");
+            const rCamping = findRowByLabel(resumen, "gestion camping") || findRowByLabel(resumen, "en gestion camping");
+            const rSinPago = findRowByLabel(resumen, "sin pago");
+            const rSenado = findRowByLabel(resumen, "señado") || findRowByLabel(resumen, "senado");
+
+            const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
+            const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
+            const sinPagoCant = (extractNumbersFromRow(rSinPago)[0]) || 0; const sinPagoMonto = (extractNumbersFromRow(rSinPago)[1]) || 0;
+            const senadoCant = (extractNumbersFromRow(rSenado)[0]) || 0;   const senadoMonto = (extractNumbersFromRow(rSenado)[1]) || 0;
+
+            const totalPendientesCant = propiaCant + campingCant + sinPagoCant + senadoCant;
+            const totalPendientesMonto = propiaMonto + campingMonto + sinPagoMonto + senadoMonto;
+
+            const rTotalCH = findRowByLabel(resumen, "cantidad de gestiones de documentos para ch") || findRowByLabel(resumen, "gestiones ch");
+            const rEmisionRP = findRowByLabel(resumen, "emision de rp") || findRowByLabel(resumen, "emision rp");
+            const rMas30 = findRowByLabel(resumen, "demoraron mas de 30");
+
+            const totalRPAnual = extractSmartMonthlyData(resumen, "emision de rp").reduce((a, b) => a + b, 0);
+            const totalDemorasAnual = extractSmartMonthlyData(resumen, "demoraron mas de 30").reduce((a, b) => a + b, 0);
+
+            setSafeText('kpi-mas-30', totalDemorasAnual); 
+            setSafeText('kpi-cartera-total', totalPendientesCant);
+            setSafeText('kpi-rp', totalRPAnual);
+            setSafeText('val-cartera-monto', formatGuaranies(totalPendientesMonto));
+            
+            setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
+            setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
+            setSafeText('td-sin-cant', sinPagoCant); setSafeText('td-sin-monto', formatGuaranies(sinPagoMonto));
+            setSafeText('td-senado-cant', senadoCant); setSafeText('td-senado-monto', formatGuaranies(senadoMonto));
+            setSafeText('td-total-cant', totalPendientesCant); setSafeText('td-total-monto', formatGuaranies(totalPendientesMonto));
+
+            updateDonutChart(propiaCant, campingCant, sinPagoCant, senadoCant);
+            updateMixedChart(extractSmartMonthlyData(resumen, "cantidad de gestiones de documentos para ch"), extractSmartMonthlyData(resumen, "emision de rp"), extractSmartMonthlyData(resumen, "demoraron mas de 30"));
+
+            renderGestiones2026(data["GESTIONES 2026"] || [], "tabla-gestiones");
+            renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
+            renderDatabaseTable(data["CARNET DE HABILITACION"] || [], "tabla-habilitacion", "habilitacion");
+            renderDatabaseTable(data["PERMISOS DE COMERCIALIZACION"] || [], "tabla-comercializacion", "comercializacion");
+            renderDatabaseTable(data["COMPRA DE ARMAS"] || [], "tabla-compras", "compras"); 
+            
+            ['propiedad', 'habilitacion', 'comercializacion', 'compras'].forEach(tab => applyAllFilters(tab));
+        }
+
         // ==========================================
-        // CONTROL DE PESTAÑAS Y BUSCADOR
+        // MANEJO DE PESTAÑAS Y FILTROS
         // ==========================================
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => {
                 el.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
-                el.classList.add('text-slate-500', 'hover:bg-slate-100');
+                el.classList.add('text-slate-500', 'hover:bg-slate-50');
             });
             
-            document.getElementById('tab-' + tabId).classList.add('active');
+            const activeTab = document.getElementById('tab-' + tabId);
+            if(activeTab) activeTab.classList.add('active');
+            
             const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-100');
-            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+            if(activeBtn) {
+                activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-50');
+                activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+            }
 
             const titulos = {
-                'resumen': 'Panel Gerencial 360°',
-                'rendimiento': 'Rendimiento Operativo 2026',
+                'resumen': 'GESTION REGULATORIA C44 - GESTIONES',
+                'alertas': 'Control Legal y Vencimientos',
+                'gestiones': 'Control Operativo: Gestiones 2026',
                 'propiedad': 'Base de Datos: Registro de Propiedad',
                 'habilitacion': 'Base de Datos: Carnet de Habilitación',
-                'comercializacion': 'Base de Datos: Comercialización'
+                'comercializacion': 'Base de Datos: Permisos de Comercialización',
+                'compras': 'Base de Datos: Compra de Armas'
             };
-            document.getElementById('main-title').innerText = titulos[tabId];
+            setSafeText('main-title', titulos[tabId] || 'DIGEMABEL');
+            
+            document.getElementById('globalSearch').value = '';
+            if(typeof lucide !== 'undefined') { lucide.createIcons(); }
+            
+            if (['propiedad', 'habilitacion', 'comercializacion', 'compras'].includes(tabId)) {
+                applyAllFilters(tabId);
+            }
+        }
+
+        function drillDown(tabId, searchKeyword) {
+            switchTab(tabId);
+            const searchInput = document.getElementById('globalSearch');
+            searchInput.value = searchKeyword;
+            applyAllFilters(tabId);
+            
+            searchInput.focus();
+            searchInput.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
+            setTimeout(() => searchInput.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-50'), 800);
+        }
+
+        function resetFilters(tabName) {
+            const activeSection = document.getElementById('tab-' + tabName);
+            if(!activeSection) return;
+            activeSection.querySelectorAll('.filter-select').forEach(s => s.value = '');
+            document.getElementById('globalSearch').value = '';
+            applyAllFilters(tabName);
         }
 
         function filterTables() {
-            const input = document.getElementById('globalSearch').value.toLowerCase();
-            document.querySelectorAll('.searchable-row').forEach(row => {
-                row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none';
+            const activeSection = document.querySelector('.tab-content.active');
+            if(!activeSection) return;
+            applyAllFilters(activeSection.id.replace('tab-', ''));
+        }
+
+        function applyAllFilters(tabName) {
+            const activeSection = document.getElementById('tab-' + tabName);
+            if(!activeSection) return;
+
+            const globalInput = normalizeText(document.getElementById('globalSearch').value);
+            
+            let threshold = null; let searchText = globalInput;
+            const gtMatch = globalInput.match(/>\s*(\d+)/);
+            if (gtMatch) { threshold = parseInt(gtMatch[1], 10); searchText = globalInput.replace(gtMatch[0], '').trim(); }
+            const searchTerms = searchText.split(/\s+/).filter(t => t !== '');
+
+            const selects = activeSection.querySelectorAll('.filter-select');
+            let dropdownFilters = [];
+            selects.forEach(s => {
+                if(s.value !== '') dropdownFilters.push({ col: parseInt(s.dataset.col), val: s.value, type: s.dataset.type });
             });
+
+            const rows = activeSection.querySelectorAll('tbody tr.searchable-row');
+            let visibleCount = 0; let visibleSum = 0; let hasMoney = false;
+
+            rows.forEach(row => {
+                const cells = Array.from(row.querySelectorAll('td'));
+                
+                let passDropdowns = true;
+                dropdownFilters.forEach(f => {
+                    const cellRaw = cells[f.col] ? cells[f.col].dataset.raw : '';
+                    const cellText = cells[f.col] ? cells[f.col].innerText : '';
+                    
+                    if (f.type === 'range') {
+                        const num = parseFloat(cellText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                        if (isNaN(num)) { passDropdowns = false; }
+                        else {
+                            if (f.val === '<30' && num >= 30) passDropdowns = false;
+                            if (f.val === '>30' && num <= 30) passDropdowns = false;
+                            if (f.val === '>60' && num <= 60) passDropdowns = false;
+                            if (f.val === '>90' && num <= 90) passDropdowns = false;
+                        }
+                    } else {
+                        if (cellRaw !== f.val) passDropdowns = false;
+                    }
+                });
+
+                const rowText = normalizeText(row.innerText);
+                const passText = searchTerms.every(term => rowText.includes(term));
+                
+                let passNum = true;
+                if (threshold !== null) {
+                    passNum = cells.some(cell => {
+                        const val = parseFloat(cell.innerText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                        return !isNaN(val) && val >= threshold && val < 5000; 
+                    });
+                }
+                
+                if (passDropdowns && passText && passNum) {
+                    row.style.display = '';
+                    visibleCount++;
+                    cells.forEach(c => {
+                        if (c.innerText.includes('₲')) {
+                            hasMoney = true;
+                            let val = parseFloat(c.innerText.replace(/[.₲\s]/g, '').replace(',', '.'));
+                            if(!isNaN(val)) visibleSum += val;
+                        }
+                    });
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            const countEl = document.getElementById(`count-${tabName}`);
+            if (countEl) countEl.innerText = visibleCount;
+            
+            const sumContainer = document.getElementById(`sum-container-${tabName}`);
+            const sumDiv = document.getElementById(`sum-div-${tabName}`);
+            const sumEl = document.getElementById(`sum-${tabName}`);
+            
+            if (sumContainer && sumEl) {
+                if (hasMoney && visibleSum > 0) {
+                    sumContainer.classList.remove('hidden');
+                    if(sumDiv) sumDiv.classList.remove('hidden');
+                    sumEl.innerText = "₲ " + Math.round(visibleSum).toLocaleString('es-PY');
+                } else {
+                    sumContainer.classList.add('hidden');
+                    if(sumDiv) sumDiv.classList.add('hidden');
+                }
+            }
         }
     </script>
 </head>
-<body class="text-slate-800 flex h-screen overflow-hidden" onload="fetchLiveSheetsData();">
+<body class="flex h-screen overflow-hidden" onload="fetchLiveSheetsData();">
 
-    <div id="loader" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center gap-6 transition-all duration-500">
-        <div class="relative flex items-center justify-center w-20 h-20">
+    <div id="loader" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center transition-all duration-300">
+        <div class="relative flex items-center justify-center w-20 h-20 mb-4">
             <div class="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
             <div class="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-            <i data-lucide="database" class="w-8 h-8 text-blue-400 animate-pulse"></i>
         </div>
-        <div class="text-center">
-            <h2 class="text-xl font-black text-white tracking-tight">DIGEMABEL <span class="text-blue-500">PRO</span></h2>
-            <p class="text-sm text-slate-400 mt-2 font-medium">Sincronizando flujos de datos en tiempo real...</p>
-        </div>
-        <span id="error-msg" class="text-sm text-red-400 font-bold max-w-lg text-center px-4 mt-2"></span>
+        <h2 class="text-xl font-bold text-white">Iniciando Ecosistema...</h2>
+        <span id="error-msg" class="text-sm text-rose-400 font-bold mt-4 text-center max-w-md px-4"></span>
+        <button id="btn-retry" onclick="retryFetch()" class="hidden mt-6 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition-all flex items-center gap-2">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reintentar
+        </button>
     </div>
 
-    <aside class="w-[280px] bg-white flex flex-col border-r border-slate-200 shadow-xl z-20">
-        <div class="p-6 border-b border-slate-100 flex items-center justify-center h-28">
-            <img src="LOGOC44.png" alt="Logo C44" class="max-h-16 w-auto object-contain drop-shadow-sm transition-transform hover:scale-105" onerror="this.src='https://via.placeholder.com/180x80?text=LOGO+C44'">
+    <div id="toast" class="toast"></div>
+
+    <aside class="w-20 md:w-[260px] bg-white flex flex-col border-r border-slate-200 z-20 flex-shrink-0 transition-all shadow-[2px_0_10px_rgba(0,0,0,0.02)] print:hidden">
+        <div class="p-4 md:p-6 border-b border-slate-100 flex items-center justify-center h-20 cursor-pointer hover:bg-slate-50 transition-colors" onclick="retryFetch()" title="Forzar Sincronización">
+            <img src="LOGOC44.png" alt="Logo C44" class="max-h-12 w-auto object-contain hidden md:block" onerror="this.style.display='none'">
+            <i data-lucide="layout-dashboard" class="w-8 h-8 text-blue-600 block md:hidden"></i>
         </div>
         
-        <nav class="flex-1 p-5 space-y-2 overflow-y-auto">
-            <p class="px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Módulos Analíticos</p>
-            
-            <button id="btn-resumen" onclick="switchTab('resumen')" class="nav-btn w-full flex items-center gap-3 px-4 py-3.5 text-sm font-bold rounded-xl bg-blue-600 text-white shadow-md transition-all">
-                <i data-lucide="pie-chart" class="w-5 h-5"></i> Resumen 360°
+        <nav class="flex-1 p-3 md:p-4 space-y-2 overflow-y-auto">
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 mt-2 hidden md:block">Analítica & Control</p>
+            <button id="btn-resumen" onclick="switchTab('resumen')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-bold rounded-lg bg-blue-600 text-white shadow-md transition-all">
+                <i data-lucide="pie-chart" class="w-5 h-5"></i> <span class="hidden md:block">Panel Principal</span>
             </button>
-
-            <button id="btn-rendimiento" onclick="switchTab('rendimiento')" class="nav-btn w-full flex items-center gap-3 px-4 py-3.5 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
-                <i data-lucide="trending-up" class="w-5 h-5"></i> Rendimiento 2026
+            <button id="btn-alertas" onclick="switchTab('alertas')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all relative">
+                <i data-lucide="bell-ring" class="w-5 h-5 text-rose-500"></i> <span class="hidden md:block">Radar Legal</span>
+                <span class="absolute top-1 right-2 w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping hidden md:block"></span>
+            </button>
+            <button id="btn-gestiones" onclick="switchTab('gestiones')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+                <i data-lucide="calendar-check" class="w-5 h-5 text-orange-500"></i> <span class="hidden md:block">Gestiones 2026</span>
             </button>
             
             <div class="my-4 border-t border-slate-100"></div>
-            <p class="px-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 mt-4">Bases de Datos Brutas</p>
-
-            <button id="btn-propiedad" onclick="switchTab('propiedad')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
-                <i data-lucide="file-check-2" class="w-5 h-5"></i> Registro Propiedad
+            <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 hidden md:block">Bases de Datos</p>
+            <button id="btn-propiedad" onclick="switchTab('propiedad')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+                <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i> <span class="hidden md:block">Propiedad</span>
             </button>
-            
-            <button id="btn-habilitacion" onclick="switchTab('habilitacion')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
-                <i data-lucide="id-card" class="w-5 h-5"></i> Carnet Habilitación
+            <button id="btn-habilitacion" onclick="switchTab('habilitacion')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+                <i data-lucide="id-card" class="w-5 h-5 text-emerald-500"></i> <span class="hidden md:block">Habilitación</span>
             </button>
-
-            <button id="btn-comercializacion" onclick="switchTab('comercializacion')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-500 hover:bg-slate-100 rounded-xl transition-all">
-                <i data-lucide="shopping-cart" class="w-5 h-5"></i> Comercialización
+            <button id="btn-compras" onclick="switchTab('compras')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+                <i data-lucide="shopping-bag" class="w-5 h-5 text-cyan-500"></i> <span class="hidden md:block">Compra de Armas</span>
+            </button>
+            <button id="btn-comercializacion" onclick="switchTab('comercializacion')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+                <i data-lucide="shopping-cart" class="w-5 h-5 text-purple-500"></i> <span class="hidden md:block">Comercialización</span>
             </button>
         </nav>
     </aside>
 
-    <main class="flex-1 flex flex-col overflow-hidden bg-slate-50/50">
-        
-        <header class="bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-5 flex justify-between items-center z-10 sticky top-0">
-            <div class="flex items-center gap-4">
-                <h1 id="main-title" class="text-2xl font-black text-slate-800 tracking-tight">Panel Gerencial 360°</h1>
-                <span class="bg-emerald-100 text-emerald-700 text-[10px] px-3 py-1 rounded-full font-black flex items-center gap-1.5 uppercase tracking-widest border border-emerald-200">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> LIVE
-                </span>
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50">
+        <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 py-4 flex justify-between items-center z-10 sticky top-0 flex-shrink-0 print:hidden">
+            <div class="flex items-center gap-3">
+                <h1 id="main-title" class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight truncate">GESTION REGULATORIA C44 - GESTIONES</h1>
             </div>
-            
-            <div class="flex items-center gap-4">
-                <div class="relative group">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
-                    <input type="text" id="globalSearch" onkeyup="filterTables()" placeholder="Filtro global..." class="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all w-72 shadow-sm placeholder-slate-400">
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                    <input type="text" id="globalSearch" onkeyup="filterTables()" placeholder="Buscar en tabla actual..." class="pl-9 pr-4 py-2 bg-slate-100 border border-slate-200 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition-all w-48 md:w-72 text-slate-700">
                 </div>
-                <button onclick="location.reload()" class="bg-slate-800 hover:bg-slate-900 text-white p-2.5 rounded-xl shadow-md transition-all group" title="Recargar Datos">
-                    <i data-lucide="refresh-cw" class="w-5 h-5 group-hover:rotate-180 transition-transform duration-500"></i>
+                <button onclick="window.print()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 p-2 rounded-lg shadow-sm transition-all group" title="Exportar a PDF">
+                    <i data-lucide="printer" class="w-5 h-5"></i>
                 </button>
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-8 space-y-8">
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
             
             <section id="tab-resumen" class="tab-content active space-y-8">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                    <div class="glass-card border border-red-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
+                <div id="center-notification" class="hidden space-y-2 print:hidden"></div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                    <div onclick="drillDown('propiedad', 'camping >30')" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Auto-filtra la base de datos">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Demoras >30 Días</p>
-                                <h3 id="kpi-mas-30" class="text-4xl font-black text-red-600">0</h3>
+                                <div class="tooltip-container">
+                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Gestiones >30 Días <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Proviene de la pestaña RESUMEN: Suma de la fila 'CANTIDAD DE GESTIONES QUE DEMORARON MAS DE 30 DIAS'. Clic para filtrar casos.</span>
+                                </div>
+                                <h3 id="kpi-mas-30" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
-                            <div class="bg-red-50 p-3 rounded-xl text-red-500 shadow-inner"><i data-lucide="siren" class="w-6 h-6"></i></div>
+                            <div class="bg-rose-50 p-3 rounded-xl text-rose-500"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-
-                    <div class="glass-card border border-blue-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    <div onclick="drillDown('propiedad', '')" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Activos</p>
-                                <h3 id="kpi-cartera-total" class="text-4xl font-black text-blue-900">0</h3>
+                                <div class="tooltip-container">
+                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Total Activos <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Suma de las cantidades de Gestión Propia, Camping, Sin Pago y Señados de la hoja Resumen.</span>
+                                </div>
+                                <h3 id="kpi-cartera-total" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
-                            <div class="bg-blue-50 p-3 rounded-xl text-blue-600 shadow-inner"><i data-lucide="users" class="w-6 h-6"></i></div>
+                            <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i data-lucide="users" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-
-                    <div class="glass-card border border-purple-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-purple-500"></div>
+                    <div onclick="drillDown('gestiones', 'rp')" class="clickable-card glass-card border-t-4 border-t-purple-500 p-6 relative group">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Emisiones RP (Año)</p>
-                                <h3 id="kpi-rp" class="text-4xl font-black text-purple-600">0</h3>
+                                <div class="tooltip-container">
+                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Emisiones RP Año <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Proviene de la pestaña RESUMEN: Suma anual de 'CANTIDAD DE EMISION DE RP'.</span>
+                                </div>
+                                <h3 id="kpi-rp" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
-                            <div class="bg-purple-50 p-3 rounded-xl text-purple-600 shadow-inner"><i data-lucide="file-badge" class="w-6 h-6"></i></div>
+                            <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="file-badge" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-
-                    <div class="glass-card border border-emerald-200/60 rounded-2xl p-6 shadow-sm relative overflow-hidden group bg-gradient-to-br from-white to-emerald-50/30">
-                        <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                    <div class="glass-card border-t-4 border-t-emerald-500 p-6 relative bg-gradient-to-br from-white to-emerald-50/30">
                         <div class="flex justify-between items-start">
                             <div>
-                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Capital Pendiente</p>
-                                <h3 id="val-cartera-monto" class="text-3xl font-black text-emerald-600 mt-1">₲ 0</h3>
-                                <p id="txt-eficiencia" class="text-xs font-bold text-emerald-600 mt-2 flex items-center gap-1"><i data-lucide="trending-up" class="w-3.5 h-3.5"></i> %</p>
+                                <div class="tooltip-container">
+                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Capital Pendiente <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Suma monetaria en Guaraníes de Gestión Propia, Camping, Sin Pago y Señados del Resumen.</span>
+                                </div>
+                                <h3 id="val-cartera-monto" class="text-2xl font-bold text-emerald-600 mt-2">₲ 0</h3>
                             </div>
-                            <div class="bg-emerald-100 p-3 rounded-xl text-emerald-600 shadow-inner"><i data-lucide="coins" class="w-6 h-6"></i></div>
+                            <div class="bg-emerald-50 p-3 rounded-xl text-emerald-600"><i data-lucide="banknote" class="w-6 h-6"></i></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="glass-card border border-slate-200 rounded-2xl p-6 shadow-sm w-full">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
-                            <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i> Tendencias Operativas 2026 (CH vs RP vs Demoras)
-                        </h3>
-                    </div>
-                    <div class="w-full h-72">
-                        <canvas id="mixedChart"></canvas>
-                    </div>
+                <div class="glass-card p-6 w-full hidden md:block">
+                    <h3 class="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-5 h-5 text-blue-500"></i> Evolución Operativa General</h3>
+                    <div class="w-full h-72"><canvas id="mixedChart"></canvas></div>
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    <div class="lg:col-span-2 glass-card border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden">
-                        <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
-                            <h3 class="text-sm font-black text-slate-700 uppercase tracking-widest flex items-center gap-2">
-                                <i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Facturación
-                            </h3>
+                    <div class="lg:col-span-2 glass-card flex flex-col overflow-hidden">
+                        <div class="px-6 py-5 border-b border-slate-100">
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera</h3>
                         </div>
-                        <div class="p-0 overflow-x-auto">
+                        <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
-                                <thead class="text-[10px] uppercase bg-slate-100/50 text-slate-500 font-black tracking-widest">
-                                    <tr>
-                                        <th class="py-4 px-6">Tipo de Trámite</th>
-                                        <th class="py-4 px-6 text-center">Volumen</th>
-                                        <th class="py-4 px-6 text-right">Monto Neto</th>
-                                    </tr>
+                                <thead class="bg-slate-50 text-slate-500 font-semibold text-xs border-b border-slate-200">
+                                    <tr><th class="py-3 px-6">Segmento (Clic para auto-filtrar)</th><th class="py-3 px-6 text-center">Clientes</th><th class="py-3 px-6 text-right">Monto Neto</th></tr>
                                 </thead>
-                                <tbody class="text-slate-700 font-medium">
-                                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                        <td class="py-4 px-6 flex items-center gap-3"><div class="w-3 h-3 rounded bg-blue-500 shadow-sm"></div> Gestión Propia</td>
-                                        <td id="td-propia-cant" class="py-4 px-6 text-center font-bold text-slate-900">0</td>
-                                        <td id="td-propia-monto" class="py-4 px-6 text-right">0</td>
+                                <tbody class="divide-y divide-slate-100">
+                                    <tr onclick="drillDown('propiedad', 'propia')" class="hover:bg-blue-50/50 cursor-pointer transition-colors">
+                                        <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Gestión Propia</td>
+                                        <td id="td-propia-cant" class="py-4 px-6 text-center font-semibold">0</td>
+                                        <td id="td-propia-monto" class="py-4 px-6 text-right text-slate-600">0</td>
                                     </tr>
-                                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                                        <td class="py-4 px-6 flex items-center gap-3"><div class="w-3 h-3 rounded bg-purple-500 shadow-sm"></div> Gestión de Camping</td>
-                                        <td id="td-camping-cant" class="py-4 px-6 text-center font-bold text-slate-900">0</td>
-                                        <td id="td-camping-monto" class="py-4 px-6 text-right">0</td>
+                                    <tr onclick="drillDown('propiedad', 'camping')" class="hover:bg-purple-50/50 cursor-pointer transition-colors">
+                                        <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-purple-500"></div> Gestión de Camping</td>
+                                        <td id="td-camping-cant" class="py-4 px-6 text-center font-semibold">0</td>
+                                        <td id="td-camping-monto" class="py-4 px-6 text-right text-slate-600">0</td>
                                     </tr>
-                                    <tr class="border-b border-slate-50 hover:bg-red-50/50 transition-colors bg-red-50/20">
-                                        <td class="py-4 px-6 flex items-center gap-3 text-red-600 font-bold"><div class="w-3 h-3 rounded bg-red-500 shadow-sm animate-pulse"></div> Sin Pago Realizado</td>
-                                        <td id="td-sin-cant" class="py-4 px-6 text-center font-black text-red-600">0</td>
-                                        <td id="td-sin-monto" class="py-4 px-6 text-right font-black text-red-600">0</td>
+                                    <tr onclick="drillDown('propiedad', 'sin pago')" class="hover:bg-rose-50/50 bg-rose-50/30 cursor-pointer transition-colors">
+                                        <td class="py-4 px-6 flex items-center gap-3 font-bold text-rose-600"><div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div> Sin Pago</td>
+                                        <td id="td-sin-cant" class="py-4 px-6 text-center font-bold text-rose-600">0</td>
+                                        <td id="td-sin-monto" class="py-4 px-6 text-right font-bold text-rose-600">0</td>
                                     </tr>
-                                    <tr class="border-b border-slate-200 hover:bg-slate-50 transition-colors">
-                                        <td class="py-4 px-6 flex items-center gap-3"><div class="w-3 h-3 rounded bg-amber-500 shadow-sm"></div> Clientes Señados</td>
-                                        <td id="td-senado-cant" class="py-4 px-6 text-center font-bold text-slate-900">0</td>
-                                        <td id="td-senado-monto" class="py-4 px-6 text-right">0</td>
+                                    <tr onclick="drillDown('propiedad', 'señado')" class="hover:bg-amber-50/50 cursor-pointer transition-colors">
+                                        <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div> Señados</td>
+                                        <td id="td-senado-cant" class="py-4 px-6 text-center font-semibold">0</td>
+                                        <td id="td-senado-monto" class="py-4 px-6 text-right text-slate-600">0</td>
                                     </tr>
                                     <tr class="bg-slate-800 text-white">
-                                        <td class="py-5 px-6 font-black uppercase text-xs tracking-widest rounded-bl-xl">Totales</td>
-                                        <td id="td-total-cant" class="py-5 px-6 text-center font-black text-lg">0</td>
-                                        <td id="td-total-monto" class="py-5 px-6 text-right font-black text-lg text-emerald-400 rounded-br-xl">0</td>
+                                        <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Acumulado</td>
+                                        <td id="td-total-cant" class="py-4 px-6 text-center font-bold text-lg">0</td>
+                                        <td id="td-total-monto" class="py-4 px-6 text-right font-bold text-lg text-emerald-400">0</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
-
-                    <div class="glass-card border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-center relative">
-                        <h3 class="text-[10px] font-black text-slate-400 mb-4 uppercase tracking-widest text-center w-full">Distribución Visual</h3>
-                        <div class="w-full max-w-[220px] mx-auto"><canvas id="donutChart"></canvas></div>
+                    <div class="glass-card p-6 flex flex-col justify-center items-center">
+                        <div class="w-full max-w-[200px] cursor-pointer" title="Filtra tocando los colores"><canvas id="donutChart"></canvas></div>
                     </div>
                 </div>
             </section>
 
-            <section id="tab-rendimiento" class="tab-content space-y-4">
-                <div class="bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-xl flex items-center gap-3 shadow-sm mb-6">
-                    <i data-lucide="info" class="w-5 h-5 flex-shrink-0"></i>
-                    <p class="text-sm font-medium">Esta tabla refleja todo el flujo de <strong>PROCESO 2026</strong>. Los errores de fórmula del archivo original (#VALUE!) se marcan en rojo automáticamente.</p>
+            <section id="tab-alertas" class="tab-content space-y-6">
+                <div class="bg-indigo-50 border border-indigo-200 text-indigo-800 p-4 rounded-xl flex items-center gap-3 shadow-sm mb-6">
+                    <i data-lucide="scale" class="w-6 h-6 flex-shrink-0 text-indigo-600"></i>
+                    <div>
+                        <h4 class="font-bold text-sm">Radar de Control Legal Permanente</h4>
+                        <p class="text-xs mt-1">Este módulo monitorea en tiempo real los vencimientos de contratos, instructores y licencias comerciales de la empresa registrados en el Sheets.</p>
+                    </div>
                 </div>
-                <div id="tabla-rendimiento"></div>
+                <div id="alertas-container"></div>
             </section>
-
-            <section id="tab-propiedad" class="tab-content space-y-4">
-                <div id="tabla-propiedad"></div>
-            </section>
-
-            <section id="tab-habilitacion" class="tab-content space-y-4">
-                <div id="tabla-habilitacion"></div>
-            </section>
-
-            <section id="tab-comercializacion" class="tab-content space-y-4">
-                <div id="tabla-comercializacion"></div>
-            </section>
-
+            
+            <section id="tab-gestiones" class="tab-content space-y-4"><div id="tabla-gestiones"></div></section>
+            <section id="tab-propiedad" class="tab-content space-y-4"><div id="tabla-propiedad"></div></section>
+            <section id="tab-habilitacion" class="tab-content space-y-4"><div id="tabla-habilitacion"></div></section>
+            <section id="tab-compras" class="tab-content space-y-4"><div id="tabla-compras"></div></section>
+            <section id="tab-comercializacion" class="tab-content space-y-4"><div id="tabla-comercializacion"></div></section>
         </div>
     </main>
 
     <script>
         let donutObj, mixedObj;
-
         function updateDonutChart(propia, camping, sinPago, senado) {
             const ctx = document.getElementById('donutChart').getContext('2d');
             if (donutObj) donutObj.destroy();
             donutObj = new Chart(ctx, {
                 type: 'doughnut',
-                data: {
-                    labels: ['Propia', 'Camping', 'Sin Pago', 'Señado'],
-                    datasets: [{
-                        data: [propia, camping, sinPago, senado],
-                        backgroundColor: ['#3b82f6', '#a855f7', '#ef4444', '#f59e0b'],
-                        borderColor: '#ffffff',
-                        borderWidth: 3, hoverOffset: 5
-                    }]
-                },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { family: 'Inter', size: 10, weight: 'bold' } } } }, 
-                    cutout: '75%' 
-                }
+                data: { labels: ['Propia', 'Camping', 'Sin Pago', 'Señado'], datasets: [{ data: [propia, camping, sinPago, senado], backgroundColor: ['#3b82f6', '#a855f7', '#f43f5e', '#f59e0b'], borderWidth: 2 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: { family: 'Inter', size: 11, weight: '500' } } } }, cutout: '75%', onClick: (event, elements, chart) => handleChartClick(event, elements, chart, 'donut') }
             });
         }
-
-        // EL NUEVO GRÁFICO DINÁMICO DE 2026
         function updateMixedChart(dataCH, dataRP, dataDemoras) {
             const ctx = document.getElementById('mixedChart').getContext('2d');
+            if (!ctx) return;
             if (mixedObj) mixedObj.destroy();
-            
             const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-            
             mixedObj = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: meses,
                     datasets: [
-                        {
-                            label: 'Demoras >30 Días',
-                            type: 'line',
-                            data: dataDemoras,
-                            borderColor: '#ef4444',
-                            backgroundColor: '#ef4444',
-                            borderWidth: 3,
-                            tension: 0.3, // Curva suave
-                            pointBackgroundColor: '#ffffff',
-                            pointBorderWidth: 2,
-                            pointRadius: 5,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Gestiones CH',
-                            data: dataCH,
-                            backgroundColor: '#3b82f6',
-                            borderRadius: 6,
-                            borderSkipped: false,
-                            yAxisID: 'y'
-                        },
-                        {
-                            label: 'Emisiones RP',
-                            data: dataRP,
-                            backgroundColor: '#a855f7',
-                            borderRadius: 6,
-                            borderSkipped: false,
-                            yAxisID: 'y'
-                        }
+                        { label: 'Demoras >30 Días', type: 'line', data: dataDemoras, borderColor: '#f43f5e', backgroundColor: '#f43f5e', borderWidth: 3, tension: 0.4, pointBackgroundColor: '#fff', pointBorderWidth: 2, yAxisID: 'y' },
+                        { label: 'Gestiones CH', data: dataCH, backgroundColor: '#3b82f6', borderRadius: 4, yAxisID: 'y' },
+                        { label: 'Emisiones RP', data: dataRP, backgroundColor: '#a855f7', borderRadius: 4, yAxisID: 'y' }
                     ]
                 },
                 options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'top', labels: { usePointStyle: true, font: { family: 'Inter', weight: 'bold' } } },
-                        tooltip: { backgroundColor: 'rgba(15,23,42,0.9)', titleFont: { family: 'Inter', size: 13 }, bodyFont: { family: 'Inter', size: 12 }, padding: 10, cornerRadius: 8 }
-                    },
-                    scales: {
-                        x: { grid: { display: false } },
-                        y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { dash: [4, 4] } }
-                    }
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    plugins: { legend: { position: 'top', labels: { usePointStyle: true, font: { family: 'Inter', weight: '500' } } } },
+                    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { dash: [4, 4] } } },
+                    onClick: (event, elements, chart) => handleChartClick(event, elements, chart, 'mixed')
                 }
             });
+        }
+        function handleChartClick(event, elements, chart, type) {
+            if (elements.length > 0) {
+                const elementIndex = elements[0].index;
+                let keyword = "";
+                if (type === 'donut') {
+                    const labels = ['propia', 'camping', 'sin pago', 'señado'];
+                    keyword = labels[elementIndex];
+                    drillDown('propiedad', keyword);
+                } else if (type === 'mixed') {
+                    const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    keyword = labels[elementIndex];
+                    drillDown('gestiones', keyword);
+                }
+            }
         }
     </script>
 </body>
