@@ -58,10 +58,10 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V17_FIX";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V19";
         let rawDataCache = null; 
 
-        // --- 1. UTILIDADES ---
+        // --- 1. UTILIDADES Y PARSEADORES ---
         function normalizeText(text) {
             if (!text) return "";
             return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -98,11 +98,12 @@
             if (t.includes('CAMPING')) return `<span class="bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             if (t.includes('SIN PAGO')) return `<span class="bg-rose-100 text-rose-700 border border-rose-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             if (t.includes('SEÑADO') || t.includes('SENADO')) return `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
-            if (t === 'OK' || t === 'RENOVADO' || t === 'RETIRADO DEFINITIVO') return `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
+            if (t === 'OK' || t === 'RENOVADO' || t === 'RETIRADO DEFINITIVO' || t.includes('NOTA DE CREDITO')) return `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             if (t === 'FALTA' || t === 'PENDIENTE') return `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             return text;
         }
 
+        // ¡RESTAURADAS LAS FUNCIONES QUE FALTABAN!
         function findRowByLabel(matrix, keyword) {
             if (!matrix || !Array.isArray(matrix)) return null;
             const normKeyword = normalizeText(keyword);
@@ -138,6 +139,29 @@
             return data;
         }
 
+        function sortTable(thElement, isAutoSort = false) {
+            const table = thElement.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr.searchable-row'));
+            const colIndex = Array.from(thElement.parentNode.children).indexOf(thElement);
+            
+            let isAsc = isAutoSort ? false : thElement.classList.contains('asc');
+            table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
+            thElement.classList.add(isAsc ? 'desc' : 'asc');
+            
+            rows.sort((a, b) => {
+                const aCol = a.children[colIndex]; const bCol = b.children[colIndex];
+                if(!aCol || !bCol) return 0;
+                let aText = aCol.innerText.trim(); let bText = bCol.innerText.trim();
+                let aNum = parseFloat(aText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                let bNum = parseFloat(bText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+
+                if (!isNaN(aNum) && !isNaN(bNum)) return isAsc ? aNum - bNum : bNum - aNum;
+                return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
         function purifyMatrix(matrix) {
             if (!matrix || matrix.length === 0) return [];
             let rows = matrix.filter(row => {
@@ -159,7 +183,7 @@
             return rows.map(row => row.filter((_, c) => colsToKeep.includes(c)));
         }
 
-        // --- SISTEMAS DE COPIA Y EXPORTACIÓN ---
+        // --- 2. SISTEMAS DE COPIA Y EXPORTACIÓN ---
         function copyToClipboard(cliente, dias, estado, tabName) {
             const msg = `⚠️ *Alerta DIGEMABEL*\nCliente: ${cliente}\nTrámite: ${tabName.toUpperCase()}\nEstado: ${estado}\nDemora Actual: ${dias} días.\nPor favor, verificar estatus urgentemente.`;
             navigator.clipboard.writeText(msg).then(() => {
@@ -195,30 +219,7 @@
             document.body.removeChild(link);
         }
 
-        function sortTable(thElement, isAutoSort = false) {
-            const table = thElement.closest('table');
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr.searchable-row'));
-            const colIndex = Array.from(thElement.parentNode.children).indexOf(thElement);
-            
-            let isAsc = isAutoSort ? false : thElement.classList.contains('asc');
-            table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
-            thElement.classList.add(isAsc ? 'desc' : 'asc');
-            
-            rows.sort((a, b) => {
-                const aCol = a.children[colIndex]; const bCol = b.children[colIndex];
-                if(!aCol || !bCol) return 0;
-                let aText = aCol.innerText.trim(); let bText = bCol.innerText.trim();
-                let aNum = parseFloat(aText.replace(/[.₲\s%]/g, '').replace(',', '.'));
-                let bNum = parseFloat(bText.replace(/[.₲\s%]/g, '').replace(',', '.'));
-
-                if (!isNaN(aNum) && !isNaN(bNum)) return isAsc ? aNum - bNum : bNum - aNum;
-                return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
-            });
-            rows.forEach(row => tbody.appendChild(row));
-        }
-
-        // --- MOTORES DE RENDERIZADO VISUAL ---
+        // --- 3. GENERADORES VISUALES ---
         function renderAlertas(matrix) {
             const container = document.getElementById('alertas-container');
             const centerNotification = document.getElementById('center-notification');
@@ -305,7 +306,6 @@
             container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
         }
 
-        // --- EL NUEVO RENDER DE BASE DE DATOS (CON DATA-ATRIBUTOS EXACTOS) ---
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
@@ -313,6 +313,7 @@
             
             let headers = matrix[0]; let dataRows = matrix.slice(1);
             let diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
+            let estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
 
             let tableHtml = `<div class='modern-table-container'><table class='modern-table' id='table-${tabName}'><thead><tr>`;
             headers.forEach(h => { tableHtml += `<th onclick="sortTable(this)">${String(h).trim()} <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>`; });
@@ -323,25 +324,10 @@
                 let diasValue = diasColIdx !== -1 ? row[diasColIdx] : "N/A";
                 let numDias = parseFloat(String(diasValue).replace(/[.₲\s%]/g, '').replace(',', '.'));
                 
-                // Análisis estricto de la fila para los filtros ocultos
-                let esActivo = false;
-                let esRetirado = false;
-                let estadoStrForCopy = "N/A";
+                let estadoVal = estadoColIdx !== -1 ? normalizeText(String(row[estadoColIdx])) : "";
+                let estadoStrForCopy = estadoColIdx !== -1 ? String(row[estadoColIdx]).trim().toUpperCase() : "N/A";
 
-                row.forEach(cell => {
-                    let text = normalizeText(String(cell));
-                    if (text === 'gestion propia' || text === 'gestion de camping' || text === 'gestion camping') {
-                        esActivo = true;
-                        estadoStrForCopy = String(cell).trim().toUpperCase();
-                    }
-                    if (text.includes('retirado definitivo') || text.includes('entregado')) {
-                        esRetirado = true;
-                    }
-                });
-
-                if (esRetirado) esActivo = false; // Si dice retirado, ya no está activo
-
-                tableHtml += `<tr class="searchable-row" data-tab="${tabName}" data-activo="${esActivo}" data-mora="${isNaN(numDias) ? 0 : numDias}">`;
+                tableHtml += `<tr class="searchable-row" data-tab="${tabName}" data-estado="${estadoVal}" data-mora="${isNaN(numDias) ? 0 : numDias}">`;
 
                 row.forEach((cell, cIdx) => {
                     let rawStr = String(cell).trim(); let cellStr = formatBeautifulDate(rawStr); let alignClass = "text-left"; let innerHtml = cellStr;
@@ -401,7 +387,7 @@
                     <i data-lucide="x-circle" class="w-4 h-4"></i> Limpiar
                 </button>
                 <div id="badge-activos-${tabName}" class="hidden items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold border border-indigo-200 ml-2">
-                    <span id="badge-text-${tabName}">Filtro Especial</span> <button onclick="clearSpecialFilter('${tabName}')" class="hover:text-indigo-900"><i data-lucide="x" class="w-3 h-3"></i></button>
+                    <span id="badge-text-${tabName}">Filtro Activo</span> <button onclick="clearSpecialFilter('${tabName}')" class="hover:text-indigo-900"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
                 </div>
                 
@@ -427,7 +413,7 @@
             }, 100);
         }
 
-        // --- SISTEMA DE FILTRADO ---
+        // --- 4. LÓGICA DE FILTRADO INTERACTIVO ---
         function clearSpecialFilter(tabName) {
             const table = document.getElementById(`table-${tabName}`);
             if(table) table.dataset.specialFilter = '';
@@ -468,19 +454,17 @@
             document.querySelectorAll('.filter-select').forEach(s => s.value = '');
             
             if (filterMode === 'mora_activos') {
-                searchInput.value = ''; // No ensuciamos el buscador global
+                searchInput.value = ''; 
                 if(table) table.dataset.specialFilter = 'mora_activos';
-                if(badge) {
-                    badgeText.innerText = "Filtro: Activos > 30 Días";
-                    badge.classList.remove('hidden');
-                }
+                if(badge) { badgeText.innerText = "Filtro: Propios y Camping > 30 Días"; badge.classList.remove('hidden'); }
+            } else if (filterMode === 'al_dia_propios') {
+                searchInput.value = ''; 
+                if(table) table.dataset.specialFilter = 'al_dia_propios';
+                if(badge) { badgeText.innerText = "Filtro: Propios y Camping ≤ 30 Días"; badge.classList.remove('hidden'); }
             } else if (filterMode === 'activos') {
                 searchInput.value = '';
                 if(table) table.dataset.specialFilter = 'activos';
-                if(badge) {
-                    badgeText.innerText = "Filtro: Toda la Cartera Activa";
-                    badge.classList.remove('hidden');
-                }
+                if(badge) { badgeText.innerText = "Filtro: Toda la Cartera Activa"; badge.classList.remove('hidden'); }
             } else {
                 searchInput.value = filterMode; 
                 if(table) table.dataset.specialFilter = '';
@@ -529,15 +513,26 @@
             rows.forEach(row => {
                 const cells = Array.from(row.querySelectorAll('td'));
                 
-                // LECTURA DEL CANDADO DE DATOS (Soluciona el error del 77)
+                // LECTURA DEL CANDADO DE DATOS (EL CEREBRO DEL FILTRO)
                 let passSpecial = true;
-                const isActivo = row.getAttribute('data-activo') === 'true';
+                const estado = row.getAttribute('data-estado') || "";
                 const moraDias = parseFloat(row.getAttribute('data-mora')) || 0;
 
+                let isPropiaOrCamping = estado.includes('propia') || estado.includes('camping');
+                let isActivoTotal = isPropiaOrCamping || estado.includes('señado') || estado.includes('senado') || estado.includes('sin pago');
+                let isRetirado = estado.includes('retirado') || estado.includes('entregado') || estado.includes('nota de credito');
+
+                if (isRetirado) {
+                    isPropiaOrCamping = false;
+                    isActivoTotal = false;
+                }
+
                 if (specialFilter === 'mora_activos') {
-                    if (!isActivo || moraDias <= 30) passSpecial = false;
+                    if (!isPropiaOrCamping || moraDias <= 30) passSpecial = false;
+                } else if (specialFilter === 'al_dia_propios') {
+                    if (!isPropiaOrCamping || moraDias > 30) passSpecial = false;
                 } else if (specialFilter === 'activos') {
-                    if (!isActivo) passSpecial = false;
+                    if (!isActivoTotal) passSpecial = false;
                 }
 
                 let passDropdowns = true;
@@ -612,7 +607,7 @@
                 if (!response.ok) throw new Error(`HTTP Error`);
                 const rawText = await response.text();
                 
-                try { rawDataCache = JSON.parse(rawText); } catch(e) { throw new Error("Bloqueo de Google por exceso de recargas."); }
+                try { rawDataCache = JSON.parse(rawText); } catch(e) { throw new Error("Bloqueo temporal de Google por seguridad."); }
                 try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(rawDataCache)); } catch(e) { console.warn("Memoria local llena."); }
 
                 renderData(rawDataCache);
@@ -644,67 +639,70 @@
             const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
             const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
 
-            const totalPendientesCant = propiaCant + campingCant;
-            const totalPendientesMonto = propiaMonto + campingMonto;
-
-            // EL CALCULO 100% PRECISO (A PRUEBA DE BALAS PARA OBTENER EL 62 EXACTO)
+            // EL CALCULO EXACTO DESDE LA BASE CRUDA
             let demorasActivas30 = 0;
+            let alDiaPropios = 0;
             let totalActivos = 0;
+            let capitalPendienteTotal = 0;
             
-            if (data["REGISTRO DE PROPIEDAD"]) {
-                const propDb = data["REGISTRO DE PROPIEDAD"];
-                if (propDb.length > 0) {
-                    const headers = propDb[0];
-                    const diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
+            const propDb = purifyMatrix(data["REGISTRO DE PROPIEDAD"] || []);
+            if (propDb.length > 0) {
+                const headers = propDb[0];
+                const diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
+                const estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
+                const precioColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t === 'precio' || t.includes('monto'); });
+                
+                for (let i = 1; i < propDb.length; i++) {
+                    const row = propDb[i];
+                    let estadoVal = estadoColIdx !== -1 ? normalizeText(String(row[estadoColIdx])) : "";
                     
-                    for (let i = 1; i < propDb.length; i++) {
-                        const row = propDb[i];
-                        let esActivo = false;
-                        let esRetirado = false;
-                        let mora = 0;
-                        
-                        row.forEach((cell, cIdx) => {
-                            let text = normalizeText(String(cell));
-                            if (text === 'gestion propia' || text === 'gestion de camping' || text === 'gestion camping') {
-                                esActivo = true;
-                            }
-                            if (text.includes('retirado definitivo') || text.includes('entregado')) {
-                                esRetirado = true;
-                            }
-                            if (cIdx === diasColIdx) {
-                                mora = parseFloat(text.replace(/[.₲\s%]/g, '').replace(',', '.'));
-                            }
-                        });
-                        
-                        if (esRetirado) esActivo = false;
-                        
-                        if (esActivo) {
-                            totalActivos++;
-                            if (!isNaN(mora) && mora > 30) {
+                    let isPropiaOrCamping = estadoVal.includes('propia') || estadoVal.includes('camping');
+                    let isActivoTotal = isPropiaOrCamping || estadoVal.includes('señado') || estadoVal.includes('senado') || estadoVal.includes('sin pago');
+                    let isRetirado = estadoVal.includes('retirado') || estadoVal.includes('entregado') || estadoVal.includes('nota de credito');
+                    
+                    if (isRetirado) {
+                        isPropiaOrCamping = false;
+                        isActivoTotal = false;
+                    }
+                    
+                    let diasVal = diasColIdx !== -1 ? row[diasColIdx] : 0;
+                    let mora = parseFloat(String(diasVal).replace(/[.₲\s%]/g, '').replace(',', '.'));
+
+                    let precioVal = precioColIdx !== -1 ? cleanAndParseNumber(row[precioColIdx]) : 0;
+                    
+                    if (isActivoTotal) {
+                        totalActivos++;
+                        capitalPendienteTotal += precioVal;
+                    }
+
+                    if (isPropiaOrCamping) {
+                        if (!isNaN(mora)) {
+                            if (mora > 30) {
                                 demorasActivas30++;
+                            } else {
+                                alDiaPropios++;
                             }
                         }
                     }
                 }
             }
 
-            const rEmisionRP = findRowByLabel(resumen, "emision de rp") || findRowByLabel(resumen, "emision rp");
-            const totalRPAnual = rEmisionRP ? extractMonthlyData(rEmisionRP).reduce((a, b) => a + b, 0) : 0;
-
-            // SOBREESCRIBIMOS EL VALOR DEL RESUMEN CON EL CÁLCULO REAL, ASÍ NUNCA MIENTE
+            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS
             setSafeText('kpi-mas-30', demorasActivas30); 
             setSafeText('kpi-cartera-total', totalActivos);
-            setSafeText('kpi-rp', totalRPAnual);
-            setSafeText('val-cartera-monto', formatGuaranies(totalPendientesMonto));
+            setSafeText('kpi-menos-30', alDiaPropios);
+            setSafeText('val-cartera-monto', formatGuaranies(capitalPendienteTotal));
             
             setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
             setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
-            setSafeText('td-total-cant', totalActivos); setSafeText('td-total-monto', formatGuaranies(totalPendientesMonto));
+            setSafeText('td-total-cant', propiaCant + campingCant); setSafeText('td-total-monto', formatGuaranies(propiaMonto + campingMonto));
 
             updateDonutChart(propiaCant, campingCant);
             
-            const rTotalCH = findRowByLabel(resumen, "cantidad de gestiones de documentos para ch") || findRowByLabel(resumen, "gestiones ch");
-            updateMixedChart(extractSmartMonthlyData(resumen, "cantidad de gestiones de documentos para ch"), extractSmartMonthlyData(resumen, "emision de rp"), extractSmartMonthlyData(resumen, "demoraron mas de 30"));
+            const rTotalCH = extractSmartMonthlyData(resumen, "cantidad de gestiones de documentos para ch");
+            const rEmisionRP = extractSmartMonthlyData(resumen, "emision de rp");
+            const rDemorasGrafico = extractSmartMonthlyData(resumen, "demoraron mas de 30"); 
+            updateMixedChart(rTotalCH, rEmisionRP, rDemorasGrafico);
 
             renderGestiones2026(data["GESTIONES 2026"] || [], "tabla-gestiones");
             renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
@@ -797,44 +795,47 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
-                                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">GESTIÓN PROPIA Y C44 (+30 DÍAS) <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Clic para ver la lista exacta. Se excluyen los trámites finalizados y retirados.</span>
+                                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">GESTIÓN PROPIA Y C44 (> 30 DÍAS) <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Cálculo exacto desde la base de datos (Excluye Retirados y Notas de Crédito). Clic para filtrar la lista.</span>
                                 </div>
                                 <h3 id="kpi-mas-30" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
                             <div class="bg-rose-50 p-3 rounded-xl text-rose-500"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
+                    
                     <div onclick="drillDown('propiedad', 'activos')" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group" title="Ver todos los activos en proceso">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Total Activos <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma de Gestión Propia y Camping Activos.</span>
+                                    <span class="info-tooltip">Suma de Gestión Propia, Gestión Camping, Señado y Sin Pago. Excluye Retirados y Notas de Crédito.</span>
                                 </div>
                                 <h3 id="kpi-cartera-total" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
                             <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i data-lucide="users" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-                    <div onclick="drillDown('gestiones', 'rp')" class="clickable-card glass-card border-t-4 border-t-purple-500 p-6 relative group">
+                    
+                    <div onclick="drillDown('propiedad', 'al_dia_propios')" class="clickable-card glass-card border-t-4 border-t-purple-500 p-6 relative group" title="Ver clientes sanos de Propia y Camping">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
-                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Emisiones RP Año <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma anual de 'CANTIDAD DE EMISION DE RP'.</span>
+                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">CLIENTES < 30 DÍAS <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Cuántos clientes cuentan con menos de 30 días en Gestión Propia y Gestión Camping exclusivamente.</span>
                                 </div>
-                                <h3 id="kpi-rp" class="text-4xl font-bold text-slate-800">0</h3>
+                                <h3 id="kpi-menos-30" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
-                            <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="file-badge" class="w-6 h-6"></i></div>
+                            <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
+                    
                     <div class="glass-card border-t-4 border-t-emerald-500 p-6 relative bg-gradient-to-br from-white to-emerald-50/30">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Capital Pendiente <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma monetaria en Guaraníes exclusiva de Gestión Propia y Camping Activos.</span>
+                                    <span class="info-tooltip">Suma monetaria en Guaraníes de todos los Activos (Propia, Camping, Señado y Sin Pago).</span>
                                 </div>
                                 <h3 id="val-cartera-monto" class="text-2xl font-bold text-emerald-600 mt-2">₲ 0</h3>
                             </div>
@@ -851,7 +852,7 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 glass-card flex flex-col overflow-hidden">
                         <div class="px-6 py-5 border-b border-slate-100">
-                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Activa</h3>
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Principal</h3>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
@@ -870,7 +871,7 @@
                                         <td id="td-camping-monto" class="py-4 px-6 text-right text-slate-600">0</td>
                                     </tr>
                                     <tr class="bg-slate-800 text-white">
-                                        <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Cartera Activa</td>
+                                        <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Propia y Camping</td>
                                         <td id="td-total-cant" class="py-4 px-6 text-center font-bold text-lg">0</td>
                                         <td id="td-total-monto" class="py-4 px-6 text-right font-bold text-lg text-emerald-400">0</td>
                                     </tr>
@@ -889,7 +890,7 @@
                     <i data-lucide="scale" class="w-6 h-6 flex-shrink-0 text-indigo-600"></i>
                     <div>
                         <h4 class="font-bold text-sm">Radar de Control Legal Permanente</h4>
-                        <p class="text-xs mt-1">Este módulo monitorea en tiempo real los vencimientos de contratos, instructores y licencias comerciales de la empresa registrados en el Sheets.</p>
+                        <p class="text-xs mt-1">Este módulo monitorea en tiempo real los vencimientos de contratos, instructores y licencias comerciales registrados en el ecosistema.</p>
                     </div>
                 </div>
                 <div id="alertas-container"></div>
