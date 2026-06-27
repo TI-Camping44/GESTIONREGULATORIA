@@ -22,7 +22,6 @@
         .clickable-card { cursor: pointer; transition: all 0.2s ease; border-width: 2px; }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
         
-        /* Tablas */
         .modern-table-container { width: 100%; overflow-x: auto; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .modern-table { width: 100%; border-collapse: collapse; text-align: left; }
         .modern-table th { background-color: #f1f5f9; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 16px; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10; cursor: pointer; white-space: nowrap; }
@@ -43,7 +42,6 @@
         .toast { position: fixed; bottom: 30px; right: 30px; background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); pointer-events: none; }
         .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
         
-        /* Tooltips Inteligentes */
         .tooltip-container { position: relative; display: inline-block; }
         .info-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(10px); background-color: #1e293b; color: white; text-align: left; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; width: 220px; z-index: 50; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); pointer-events: none; line-height: 1.4; text-transform: none; letter-spacing: normal; }
         .info-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
@@ -60,10 +58,10 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_FINAL";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V17_FIX";
         let rawDataCache = null; 
 
-        // --- UTILIDADES BÁSICAS ---
+        // --- 1. UTILIDADES ---
         function normalizeText(text) {
             if (!text) return "";
             return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -94,7 +92,6 @@
             return str;
         }
 
-        // Etiquetas visuales inteligentes
         function createBadge(text) {
             const t = String(text).trim().toUpperCase();
             if (t.includes('PROPIA')) return `<span class="bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
@@ -117,10 +114,27 @@
             return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
         }
 
-        function extractMonthlyData(row) {
-            let data = [];
-            if(!row) return Array(12).fill(0);
-            for(let i=1; i<=12; i++) data.push(cleanAndParseNumber(row[i]));
+        function extractSmartMonthlyData(resumenMatrix, keyword) {
+            let data = Array(12).fill(0);
+            const rowIdx = resumenMatrix.findIndex(r => r && Array.isArray(r) && r.some(c => normalizeText(String(c)).includes(normalizeText(keyword))));
+            if (rowIdx === -1) return data;
+            
+            const targetRow = resumenMatrix[rowIdx];
+            let headerRow = null;
+            for (let i = rowIdx - 1; i >= 0; i--) {
+                const rStr = normalizeText(resumenMatrix[i].join(' '));
+                if (rStr.includes('enero') && rStr.includes('febrero')) { headerRow = resumenMatrix[i]; break; }
+            }
+            
+            if (headerRow) {
+                const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                meses.forEach((mes, idx) => {
+                    const colIdx = headerRow.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes));
+                    if (colIdx !== -1 && targetRow[colIdx] !== undefined) data[idx] = cleanAndParseNumber(targetRow[colIdx]);
+                });
+            } else {
+                for(let i=0; i<12; i++) data[i] = cleanAndParseNumber(targetRow[i+1]);
+            }
             return data;
         }
 
@@ -133,8 +147,7 @@
             });
             if(rows.length === 0) return [];
 
-            let colCount = rows[0].length;
-            let colsToKeep = [];
+            let colCount = rows[0].length; let colsToKeep = [];
             for(let c=0; c<colCount; c++) {
                 let hasRealData = false;
                 for(let r=0; r<rows.length; r++) {
@@ -146,42 +159,16 @@
             return rows.map(row => row.filter((_, c) => colsToKeep.includes(c)));
         }
 
-        // --- SISTEMA DE COPIADO RÁPIDO PARA RECLAMOS ---
+        // --- SISTEMAS DE COPIA Y EXPORTACIÓN ---
         function copyToClipboard(cliente, dias, estado, tabName) {
-            const msg = `⚠️ *Revisión DIGEMABEL*\nCliente: ${cliente}\nTrámite: ${tabName.toUpperCase()}\nEstado: ${estado}\nTiempo de espera actual: ${dias} días.\nPor favor verificar estatus.`;
+            const msg = `⚠️ *Alerta DIGEMABEL*\nCliente: ${cliente}\nTrámite: ${tabName.toUpperCase()}\nEstado: ${estado}\nDemora Actual: ${dias} días.\nPor favor, verificar estatus urgentemente.`;
             navigator.clipboard.writeText(msg).then(() => {
                 const toast = document.getElementById('toast');
-                toast.innerText = "¡Texto copiado para WhatsApp/Email!";
+                toast.innerHTML = `<i data-lucide="check-circle" class="inline w-5 h-5 mr-2 text-emerald-400"></i> ¡Mensaje copiado para WhatsApp!`;
+                lucide.createIcons();
                 toast.classList.add('show');
                 setTimeout(() => toast.classList.remove('show'), 3000);
             });
-        }
-
-        // --- SISTEMA DE ORDENAMIENTO DE TABLAS ---
-        function sortTable(thElement, isAutoSort = false) {
-            const table = thElement.closest('table');
-            const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr.searchable-row'));
-            const colIndex = Array.from(thElement.parentNode.children).indexOf(thElement);
-            
-            // Si es auto-sort (al abrir), forzamos descendente. Si es clic, alternamos.
-            let isAsc = isAutoSort ? false : thElement.classList.contains('asc');
-            table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
-            thElement.classList.add(isAsc ? 'desc' : 'asc');
-            
-            rows.sort((a, b) => {
-                const aCol = a.children[colIndex];
-                const bCol = b.children[colIndex];
-                if(!aCol || !bCol) return 0;
-                let aText = aCol.innerText.trim();
-                let bText = bCol.innerText.trim();
-                let aNum = parseFloat(aText.replace(/[.₲\s%]/g, '').replace(',', '.'));
-                let bNum = parseFloat(bText.replace(/[.₲\s%]/g, '').replace(',', '.'));
-
-                if (!isNaN(aNum) && !isNaN(bNum)) return isAsc ? aNum - bNum : bNum - aNum;
-                return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
-            });
-            rows.forEach(row => tbody.appendChild(row));
         }
 
         function exportTableToCSV(tabName) {
@@ -190,15 +177,14 @@
             let csv = [];
             const rows = table.querySelectorAll('tr');
             for (let i = 0; i < rows.length; i++) {
-                if(rows[i].style.display === 'none') continue; // Solo exporta lo filtrado/visible
+                if(rows[i].style.display === 'none') continue; 
                 let row = [], cols = rows[i].querySelectorAll('td, th');
                 for (let j = 0; j < cols.length; j++) {
-                    let text = cols[j].innerText.replace(/"/g, '""'); // Evitar roturas por comillas
+                    let text = cols[j].innerText.replace(/"/g, '""'); 
                     row.push('"' + text + '"');
                 }
                 csv.push(row.join(','));
             }
-            // Agregar BOM para que Excel lea los tildes y caracteres latinos correctamente
             let csvFile = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], {type: "text/csv;charset=utf-8;"});
             let link = document.createElement("a");
             link.download = `Reporte_${tabName}_${new Date().toISOString().slice(0,10)}.csv`;
@@ -209,238 +195,174 @@
             document.body.removeChild(link);
         }
 
-        // =======================================================
-        // GENERADORES VISUALES
-        // =======================================================
+        function sortTable(thElement, isAutoSort = false) {
+            const table = thElement.closest('table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr.searchable-row'));
+            const colIndex = Array.from(thElement.parentNode.children).indexOf(thElement);
+            
+            let isAsc = isAutoSort ? false : thElement.classList.contains('asc');
+            table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
+            thElement.classList.add(isAsc ? 'desc' : 'asc');
+            
+            rows.sort((a, b) => {
+                const aCol = a.children[colIndex]; const bCol = b.children[colIndex];
+                if(!aCol || !bCol) return 0;
+                let aText = aCol.innerText.trim(); let bText = bCol.innerText.trim();
+                let aNum = parseFloat(aText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                let bNum = parseFloat(bText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+
+                if (!isNaN(aNum) && !isNaN(bNum)) return isAsc ? aNum - bNum : bNum - aNum;
+                return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+            });
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // --- MOTORES DE RENDERIZADO VISUAL ---
         function renderAlertas(matrix) {
             const container = document.getElementById('alertas-container');
             const centerNotification = document.getElementById('center-notification');
             if (!matrix || matrix.length === 0) return;
 
-            let html = '';
-            let criticalNotificationHtml = '';
+            let html = ''; let criticalNotificationHtml = '';
             let startIndex = matrix.findIndex(row => row.some(c => normalizeText(String(c)).includes('fecha de vencimiento')));
             
             if (startIndex !== -1) {
                 const headerRow = matrix[startIndex];
                 const itemCol = headerRow.findIndex(c => normalizeText(String(c)).includes('item'));
                 const dateCol = headerRow.findIndex(c => normalizeText(String(c)).includes('vencimiento'));
-                const c1 = itemCol !== -1 ? itemCol : 0;
-                const c2 = dateCol !== -1 ? dateCol : 1;
+                const c1 = itemCol !== -1 ? itemCol : 0; const c2 = dateCol !== -1 ? dateCol : 1;
 
                 html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">`;
-                
                 for (let i = startIndex + 1; i < matrix.length; i++) {
                     const row = matrix[i];
-                    const itemStr = String(row[c1] || '').trim();
-                    const dateStr = String(row[c2] || '').trim();
-                    
+                    const itemStr = String(row[c1] || '').trim(); const dateStr = String(row[c2] || '').trim();
                     if (itemStr === '') continue; 
-                    if (normalizeText(itemStr).includes('resumen') || normalizeText(itemStr).includes('total')) break; // Fin de la tabla
+                    if (normalizeText(itemStr).includes('resumen') || normalizeText(itemStr).includes('total')) break; 
 
-                    let prettyDate = formatBeautifulDate(dateStr);
-                    let daysLeft = 999; 
-
+                    let prettyDate = formatBeautifulDate(dateStr); let daysLeft = 999; 
                     if(dateStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
                         const diff = new Date(dateStr) - new Date();
                         daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
                     } else {
                         const numbers = extractNumbersFromRow(row);
-                        if(numbers.length > 0) daysLeft = numbers[0]; // Extrae "Faltan Días"
+                        if(numbers.length > 0) daysLeft = numbers[0]; 
                     }
 
-                    let borderClass = "border-l-emerald-500";
-                    let bgIconClass = "bg-emerald-50 text-emerald-500";
-                    let textClass = "text-emerald-600";
-                    let statusText = "Vigente";
-                    let icon = "check-circle";
+                    let borderClass = "border-l-emerald-500"; let bgIconClass = "bg-emerald-50 text-emerald-500"; let textClass = "text-emerald-600"; let statusText = "Vigente"; let icon = "check-circle";
 
                     if (daysLeft < 0 || daysLeft <= 30) { 
-                        borderClass = "border-l-rose-500"; bgIconClass = "bg-rose-50 text-rose-500"; textClass = "text-rose-600"; statusText = daysLeft < 0 ? "Vencido" : "Crítico / Vence Pronto"; icon = "alert-octagon";
-                        
-                        // 🚨 ALERTA CORPORATIVA: Agrega al banner del panel principal
+                        borderClass = "border-l-rose-500"; bgIconClass = "bg-rose-50 text-rose-500"; textClass = "text-rose-600"; statusText = daysLeft < 0 ? "Vencido" : "Crítico"; icon = "alert-octagon";
                         criticalNotificationHtml += `
-                        <div class="flex items-center justify-between bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl shadow-sm animate-pulse">
-                            <div class="flex items-center gap-3">
-                                <i data-lucide="shield-alert" class="w-5 h-5 text-red-600"></i>
-                                <span class="text-xs font-bold uppercase tracking-wide">Alerta de Gobernanza Legal:</span>
-                                <span class="text-xs font-medium">El ítem <strong>"${itemStr}"</strong> registra estatus <strong>${statusText} (${daysLeft} días restantes)</strong>. Recomienda trámite urgente.</span>
-                            </div>
-                            <button onclick="switchTab('alertas')" class="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1 rounded-lg transition-all">Gestionar</button>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl shadow-sm animate-pulse mb-3 gap-3">
+                            <div class="flex items-center gap-3"><i data-lucide="shield-alert" class="w-6 h-6 text-rose-600 flex-shrink-0"></i><div><span class="text-xs font-black uppercase tracking-wide block">Alerta de Gobernanza Legal</span><span class="text-sm font-medium">El ítem <strong>"${itemStr}"</strong> registra estatus <strong>${statusText} (${daysLeft} días)</strong>.</span></div></div>
+                            <button onclick="switchTab('alertas')" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-sm w-full sm:w-auto">Gestionar Alerta</button>
                         </div>`;
-                    } else if (daysLeft <= 90) { 
-                        borderClass = "border-l-amber-500"; bgIconClass = "bg-amber-50 text-amber-500"; textClass = "text-amber-600"; statusText = "Revisar (Próximo a Vencer)"; icon = "clock";
-                    }
+                    } else if (daysLeft <= 90) { borderClass = "border-l-amber-500"; bgIconClass = "bg-amber-50 text-amber-500"; textClass = "text-amber-600"; statusText = "Próximo a Vencer"; icon = "clock"; }
 
                     if (isNaN(daysLeft) && prettyDate === '') { statusText = "Sin fecha"; textClass = "text-slate-400"; borderClass = "border-l-slate-300"; bgIconClass = "bg-slate-50 text-slate-400"; icon = "help-circle"; }
 
-                    html += `
-                    <div class="glass-card ${borderClass} border-l-4 p-5 flex items-start gap-4 hover:-translate-y-1 transition-transform">
-                        <div class="${bgIconClass} p-2.5 rounded-xl shadow-inner">
-                            <i data-lucide="${icon}" class="w-6 h-6"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-black text-slate-800">${itemStr}</h4>
-                            <p class="text-xs font-semibold text-slate-500 mt-1">Vence: <span class="${textClass}">${prettyDate || 'N/A'}</span></p>
-                            ${daysLeft !== 999 && !isNaN(daysLeft) ? `<p class="text-[10px] font-black ${textClass} uppercase tracking-widest mt-2 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100">${statusText} (${daysLeft} días)</p>` : ''}
-                        </div>
-                    </div>`;
+                    html += `<div class="glass-card ${borderClass} border-l-4 p-5 flex items-start gap-4 hover:-translate-y-1 transition-transform"><div class="${bgIconClass} p-2.5 rounded-xl shadow-inner"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div><h4 class="text-sm font-black text-slate-800">${itemStr}</h4><p class="text-xs font-semibold text-slate-500 mt-1">Vence: <span class="${textClass}">${prettyDate || 'N/A'}</span></p>${daysLeft !== 999 && !isNaN(daysLeft) ? `<p class="text-[10px] font-black ${textClass} uppercase tracking-widest mt-2 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100">${statusText} (${daysLeft} días)</p>` : ''}</div></div>`;
                 }
                 html += `</div>`;
             }
             container.innerHTML = html !== '' ? html : `<p class="text-sm text-slate-500 font-medium">No se detectaron alertas programadas.</p>`;
-            
-            if(criticalNotificationHtml !== '') {
-                centerNotification.innerHTML = criticalNotificationHtml;
-                centerNotification.classList.remove('hidden');
-            } else {
-                centerNotification.classList.add('hidden');
-            }
+            if(criticalNotificationHtml !== '') { centerNotification.innerHTML = criticalNotificationHtml; centerNotification.classList.remove('hidden'); } else { centerNotification.classList.add('hidden'); }
         }
 
-        // 2. Generador Gestiones (Ahora "Gestión Propia y Camping")
         function renderGestiones2026(rawMatrix, containerId) {
             const container = document.getElementById(containerId);
             if (!rawMatrix || rawMatrix.length === 0) { container.innerHTML = `<p class="text-slate-500">Sin datos.</p>`; return; }
-
             const mesesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
             const mesesDisplay = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            let html = ''; let currentBlockTitle = ''; let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11]; 
             
-            let html = '';
-            let currentBlockTitle = '';
-            let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11]; 
-
             rawMatrix.forEach(row => {
                 const filledCells = row.filter(c => String(c).trim() !== "");
                 if (filledCells.length === 0) return;
-
                 const rowStr = normalizeText(row.join(' '));
-                
-                // Mapeo Dinámico de Columnas
                 if (rowStr.includes('enero') && rowStr.includes('febrero')) {
-                    monthIndices = mesesNombres.map(mes => {
-                        return row.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes));
-                    });
-                    
+                    monthIndices = mesesNombres.map(mes => row.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes)));
                     let firstFound = monthIndices.find(idx => idx !== -1);
-                    if (firstFound !== undefined) {
-                        for(let i=0; i<12; i++) {
-                            if(monthIndices[i] === -1) monthIndices[i] = firstFound + i;
-                        }
-                    }
+                    if (firstFound !== undefined) { for(let i=0; i<12; i++) { if(monthIndices[i] === -1) monthIndices[i] = firstFound + i; } }
                     return; 
                 }
+                if (filledCells.length === 1 && isNaN(parseFloat(filledCells[0]))) { currentBlockTitle = String(filledCells[0]).toUpperCase(); return; }
 
-                // Detectar Subtítulo del Bloque
-                if (filledCells.length === 1 && isNaN(parseFloat(filledCells[0]))) {
-                    currentBlockTitle = String(filledCells[0]).toUpperCase();
-                    return;
-                }
-
-                // Dibuja la tabla
                 if (currentBlockTitle !== '' && filledCells.some(c => !isNaN(parseFloat(c)))) {
-                    html += `
-                    <div class="gestiones-block">
-                        <div class="gestiones-header">${currentBlockTitle}</div>
-                        <div class="overflow-x-auto">
-                            <table class="gestiones-table">
-                                <thead><tr>`;
+                    html += `<div class="gestiones-block"><div class="gestiones-header">${currentBlockTitle}</div><div class="overflow-x-auto"><table class="gestiones-table"><thead><tr>`;
                     mesesDisplay.forEach(m => html += `<th>${m}</th>`);
                     html += `</tr></thead><tbody><tr>`;
-                    
                     for (let i = 0; i < 12; i++) {
-                        let colIdx = monthIndices[i];
-                        let val = (colIdx !== -1 && row[colIdx] !== undefined) ? String(row[colIdx]).trim() : '';
-                        
-                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) {
-                            html += `<td><span class="text-slate-300 font-normal">-</span></td>`;
-                        } else {
-                            let num = parseFloat(val);
-                            if (!isNaN(num) && num !== 0) {
-                                html += `<td class="font-bold text-slate-800">${num}</td>`;
-                            } else {
-                                html += `<td><span class="text-slate-300 font-normal">0</span></td>`;
-                            }
-                        }
+                        let colIdx = monthIndices[i]; let val = (colIdx !== -1 && row[colIdx] !== undefined) ? String(row[colIdx]).trim() : '';
+                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) { html += `<td><span class="text-slate-300 font-normal">-</span></td>`; } 
+                        else { let num = parseFloat(val); if (!isNaN(num) && num !== 0) html += `<td class="font-bold text-slate-800">${num}</td>`; else html += `<td><span class="text-slate-300 font-normal">0</span></td>`; }
                     }
                     html += `</tr></tbody></table></div></div>`;
                     currentBlockTitle = ''; 
                 }
             });
-
             container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
         }
 
-        // 3. Generador para Bases de Datos
+        // --- EL NUEVO RENDER DE BASE DE DATOS (CON DATA-ATRIBUTOS EXACTOS) ---
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
+            if (!matrix || matrix.length === 0) { container.innerHTML = `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>No hay registros.</p></div>`; return; }
             
-            if (!matrix || matrix.length === 0) {
-                container.innerHTML = `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>No hay registros.</p></div>`;
-                return;
-            }
-            
-            let headers = matrix[0];
-            let dataRows = matrix.slice(1);
+            let headers = matrix[0]; let dataRows = matrix.slice(1);
+            let diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
 
             let tableHtml = `<div class='modern-table-container'><table class='modern-table' id='table-${tabName}'><thead><tr>`;
-            headers.forEach(h => {
-                tableHtml += `<th onclick="sortTable(this)">${String(h).trim()} <i data-lucide="chevron-down" class="inline w-3 h-3 text-slate-300"></i></th>`;
-            });
+            headers.forEach(h => { tableHtml += `<th onclick="sortTable(this)">${String(h).trim()} <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>`; });
             tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
 
             dataRows.forEach(row => {
-                tableHtml += `<tr class="searchable-row" data-tab="${tabName}">`;
-                
                 let clienteName = "";
-                
-                // Identificadores de columnas para el botón de copiado
-                let diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
-                let estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado') || t.includes('tipo'); });
-                
                 let diasValue = diasColIdx !== -1 ? row[diasColIdx] : "N/A";
-                let estadoValue = estadoColIdx !== -1 ? row[estadoColIdx] : "N/A";
+                let numDias = parseFloat(String(diasValue).replace(/[.₲\s%]/g, '').replace(',', '.'));
+                
+                // Análisis estricto de la fila para los filtros ocultos
+                let esActivo = false;
+                let esRetirado = false;
+                let estadoStrForCopy = "N/A";
+
+                row.forEach(cell => {
+                    let text = normalizeText(String(cell));
+                    if (text === 'gestion propia' || text === 'gestion de camping' || text === 'gestion camping') {
+                        esActivo = true;
+                        estadoStrForCopy = String(cell).trim().toUpperCase();
+                    }
+                    if (text.includes('retirado definitivo') || text.includes('entregado')) {
+                        esRetirado = true;
+                    }
+                });
+
+                if (esRetirado) esActivo = false; // Si dice retirado, ya no está activo
+
+                tableHtml += `<tr class="searchable-row" data-tab="${tabName}" data-activo="${esActivo}" data-mora="${isNaN(numDias) ? 0 : numDias}">`;
 
                 row.forEach((cell, cIdx) => {
-                    let rawStr = String(cell).trim();
-                    let cellStr = formatBeautifulDate(rawStr);
-                    let alignClass = "text-left";
-                    let innerHtml = cellStr;
+                    let rawStr = String(cell).trim(); let cellStr = formatBeautifulDate(rawStr); let alignClass = "text-left"; let innerHtml = cellStr;
 
-                    if (rawStr.includes("#VALUE!") || rawStr.includes("#DIV/0!")) {
-                        innerHtml = `<span class="text-slate-300">-</span>`; alignClass = "text-center";
-                    } else if (rawStr.includes("₲")) {
-                        alignClass = "text-right font-bold text-slate-700";
-                    } else if (isNaN(parseFloat(rawStr))) {
-                        innerHtml = createBadge(cellStr);
-                    } else if (!isNaN(parseFloat(rawStr))) {
-                        alignClass = "text-center font-medium text-slate-700";
-                    }
+                    if (rawStr.includes("#VALUE!") || rawStr.includes("#DIV/0!")) { innerHtml = `<span class="text-slate-300">-</span>`; alignClass = "text-center"; } 
+                    else if (rawStr.includes("₲")) { alignClass = "text-right font-bold text-slate-700"; } 
+                    else if (isNaN(parseFloat(rawStr)) && rawStr !== '') { innerHtml = createBadge(cellStr); } 
+                    else if (!isNaN(parseFloat(rawStr)) && rawStr !== '') { alignClass = "text-center font-medium text-slate-700"; }
                     if (cIdx === 0) alignClass = "text-left font-semibold text-slate-800"; 
 
-                    // Encontrar el nombre del cliente para el botón
-                    if (isNaN(parseFloat(rawStr)) && rawStr.length > 5 && clienteName === "") {
-                        clienteName = rawStr.replace(/"/g, '').replace(/'/g, '');
-                    }
+                    if (isNaN(parseFloat(rawStr)) && rawStr.length > 5 && clienteName === "") { clienteName = rawStr.replace(/"/g, '').replace(/'/g, ''); }
 
-                    // Insertar botón de copia si es la columna del cliente
                     if (innerHtml === cellStr && isNaN(parseFloat(rawStr)) && rawStr.length > 5 && !tableHtml.includes(`onclick="copyToClipboard`)) {
-                        innerHtml = `<div class="flex items-center justify-between gap-3 group/btn">
-                                        <span class="truncate max-w-xs block" title="${cellStr}">${cellStr}</span>
-                                        <button onclick="copyToClipboard('${clienteName}', '${diasValue}', '${estadoValue}', '${tabName}')" class="text-slate-400 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 p-1.5 rounded-md opacity-0 group-hover/btn:opacity-100 transition-all flex-shrink-0" title="Copiar Datos para Reclamo">
-                                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-                                        </button>
-                                     </div>`;
+                        innerHtml = `<div class="flex items-center justify-between gap-3 group/btn"><span class="truncate max-w-xs block" title="${cellStr}">${cellStr}</span><button onclick="copyToClipboard('${clienteName}', '${diasValue}', '${estadoStrForCopy}', '${tabName}')" class="text-slate-400 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 p-1.5 rounded-md opacity-0 group-hover/btn:opacity-100 transition-all flex-shrink-0" title="Copiar Datos para Reclamo"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button></div>`;
                     }
-
                     tableHtml += `<td class="${alignClass}" data-raw="${normalizeText(rawStr)}">${innerHtml}</td>`;
                 });
                 tableHtml += `</tr>`;
             });
             tableHtml += `</tbody></table></div>`;
 
-            // Filtros Desplegables Inteligentes
             let filtersHtml = `
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm print:hidden">
                 <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto" id="filters-${tabName}">
@@ -462,16 +384,12 @@
                     </select>`;
                 } else if (title === 'AÑO' || title === 'MES' || title.includes('ESTADO') || title.includes('CATEGORIA') || title.includes('TIPO') || title.includes('VENDEDOR')) {
                     let uniqueValues = new Set();
-                    dataRows.forEach(r => {
-                        let val = String(r[colIndex] || '').trim();
-                        if(val !== '' && !val.includes('#')) uniqueValues.add(val);
-                    });
-                    
+                    dataRows.forEach(r => { let val = String(r[colIndex] || '').trim(); if(val !== '' && !val.includes('#')) uniqueValues.add(val); });
                     let options = Array.from(uniqueValues).sort();
                     if(options.length > 0 && options.length < 50) { 
                         filtersHtml += `
                         <select class="filter-select" data-col="${colIndex}" data-type="exact" onchange="applyAllFilters('${tabName}')">
-                            <option value="">Filtro: ${title}</option>
+                            <option value="">Filtrar: ${title}</option>
                             ${options.map(o => `<option value="${normalizeText(o)}">${o}</option>`).join('')}
                         </select>`;
                     }
@@ -482,6 +400,9 @@
                 <button onclick="resetFilters('${tabName}')" class="text-xs font-bold text-slate-400 hover:text-rose-500 ml-1 flex items-center gap-1 transition-colors" title="Borrar filtros">
                     <i data-lucide="x-circle" class="w-4 h-4"></i> Limpiar
                 </button>
+                <div id="badge-activos-${tabName}" class="hidden items-center gap-1 bg-indigo-100 text-indigo-700 px-2 py-1 rounded text-xs font-bold border border-indigo-200 ml-2">
+                    <span id="badge-text-${tabName}">Filtro Especial</span> <button onclick="clearSpecialFilter('${tabName}')" class="hover:text-indigo-900"><i data-lucide="x" class="w-3 h-3"></i></button>
+                </div>
                 </div>
                 
                 <div class="flex items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 flex-shrink-0">
@@ -496,20 +417,178 @@
 
             container.innerHTML = filtersHtml + tableHtml;
 
-            // Auto-ordenar por días de gestión descendente al cargar la tabla
             setTimeout(() => {
                 const tableEl = document.getElementById(`table-${tabName}`);
                 if(tableEl) {
                     const ths = tableEl.querySelectorAll('th');
-                    let targetTh = null;
-                    ths.forEach(th => { if(normalizeText(th.innerText).includes('dias')) targetTh = th; });
+                    let targetTh = null; ths.forEach(th => { if(normalizeText(th.innerText).includes('dias')) targetTh = th; });
                     if(targetTh) sortTable(targetTh, true);
                 }
             }, 100);
         }
 
+        // --- SISTEMA DE FILTRADO ---
+        function clearSpecialFilter(tabName) {
+            const table = document.getElementById(`table-${tabName}`);
+            if(table) table.dataset.specialFilter = '';
+            const badge = document.getElementById(`badge-activos-${tabName}`);
+            if(badge) badge.classList.add('hidden');
+            applyAllFilters(tabName);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => { el.classList.remove('bg-blue-600', 'text-white', 'shadow-md'); el.classList.add('text-slate-500', 'hover:bg-slate-50'); });
+            
+            const activeTab = document.getElementById('tab-' + tabId);
+            if(activeTab) activeTab.classList.add('active');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if(activeBtn) { activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-50'); activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md'); }
+
+            const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'alertas': 'Control Legal y Vencimientos', 'gestiones': 'Control Operativo: Gestión Propia y Camping', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
+            setSafeText('main-title', titulos[tabId] || 'DIGEMABEL');
+            
+            document.getElementById('globalSearch').value = '';
+            const table = document.getElementById(`table-${tabId}`);
+            if(table) table.dataset.specialFilter = '';
+            const badge = document.getElementById(`badge-activos-${tabId}`);
+            if(badge) badge.classList.add('hidden');
+
+            if(typeof lucide !== 'undefined') { lucide.createIcons(); }
+            if (['propiedad', 'habilitacion', 'comercializacion', 'compras'].includes(tabId)) applyAllFilters(tabId);
+        }
+
+        function drillDown(tabId, filterMode) {
+            switchTab(tabId);
+            const searchInput = document.getElementById('globalSearch');
+            const table = document.getElementById(`table-${tabId}`);
+            const badge = document.getElementById(`badge-activos-${tabId}`);
+            const badgeText = document.getElementById(`badge-text-${tabId}`);
+            
+            document.querySelectorAll('.filter-select').forEach(s => s.value = '');
+            
+            if (filterMode === 'mora_activos') {
+                searchInput.value = ''; // No ensuciamos el buscador global
+                if(table) table.dataset.specialFilter = 'mora_activos';
+                if(badge) {
+                    badgeText.innerText = "Filtro: Activos > 30 Días";
+                    badge.classList.remove('hidden');
+                }
+            } else if (filterMode === 'activos') {
+                searchInput.value = '';
+                if(table) table.dataset.specialFilter = 'activos';
+                if(badge) {
+                    badgeText.innerText = "Filtro: Toda la Cartera Activa";
+                    badge.classList.remove('hidden');
+                }
+            } else {
+                searchInput.value = filterMode; 
+                if(table) table.dataset.specialFilter = '';
+                if(badge) badge.classList.add('hidden');
+            }
+            
+            applyAllFilters(tabId);
+            searchInput.focus(); searchInput.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
+            setTimeout(() => searchInput.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-50'), 800);
+        }
+
+        function resetFilters(tabName) {
+            const activeSection = document.getElementById('tab-' + tabName);
+            if(!activeSection) return;
+            activeSection.querySelectorAll('.filter-select').forEach(s => s.value = '');
+            document.getElementById('globalSearch').value = '';
+            clearSpecialFilter(tabName);
+        }
+
+        function filterTables() {
+            const activeSection = document.querySelector('.tab-content.active');
+            if(!activeSection) return;
+            applyAllFilters(activeSection.id.replace('tab-', ''));
+        }
+
+        function applyAllFilters(tabName) {
+            const activeSection = document.getElementById('tab-' + tabName);
+            if(!activeSection) return;
+
+            const table = document.getElementById(`table-${tabName}`);
+            const specialFilter = table ? table.dataset.specialFilter : '';
+
+            const globalInput = normalizeText(document.getElementById('globalSearch').value);
+            let threshold = null; let searchText = globalInput;
+            const gtMatch = globalInput.match(/>\s*(\d+)/);
+            if (gtMatch) { threshold = parseInt(gtMatch[1], 10); searchText = globalInput.replace(gtMatch[0], '').trim(); }
+            const searchTerms = searchText.split(/\s+/).filter(t => t !== '');
+
+            const selects = activeSection.querySelectorAll('.filter-select');
+            let dropdownFilters = [];
+            selects.forEach(s => { if(s.value !== '') dropdownFilters.push({ col: parseInt(s.dataset.col), val: s.value, type: s.dataset.type }); });
+
+            const rows = activeSection.querySelectorAll('tbody tr.searchable-row');
+            let visibleCount = 0; let visibleSum = 0; let hasMoney = false;
+
+            rows.forEach(row => {
+                const cells = Array.from(row.querySelectorAll('td'));
+                
+                // LECTURA DEL CANDADO DE DATOS (Soluciona el error del 77)
+                let passSpecial = true;
+                const isActivo = row.getAttribute('data-activo') === 'true';
+                const moraDias = parseFloat(row.getAttribute('data-mora')) || 0;
+
+                if (specialFilter === 'mora_activos') {
+                    if (!isActivo || moraDias <= 30) passSpecial = false;
+                } else if (specialFilter === 'activos') {
+                    if (!isActivo) passSpecial = false;
+                }
+
+                let passDropdowns = true;
+                dropdownFilters.forEach(f => {
+                    const cellRaw = cells[f.col] ? cells[f.col].dataset.raw : '';
+                    const cellText = cells[f.col] ? cells[f.col].innerText : '';
+                    if (f.type === 'range') {
+                        const num = parseFloat(cellText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                        if (isNaN(num)) { passDropdowns = false; }
+                        else {
+                            if (f.val === '<30' && num >= 30) passDropdowns = false;
+                            if (f.val === '>30' && num <= 30) passDropdowns = false;
+                            if (f.val === '>60' && num <= 60) passDropdowns = false;
+                            if (f.val === '>90' && num <= 90) passDropdowns = false;
+                        }
+                    } else { if (cellRaw !== f.val) passDropdowns = false; }
+                });
+
+                const rowText = normalizeText(row.innerText);
+                let passText = searchTerms.every(term => rowText.includes(term));
+                
+                let passNum = true;
+                if (threshold !== null) {
+                    passNum = cells.some(cell => {
+                        const val = parseFloat(cell.innerText.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                        return !isNaN(val) && val >= threshold && val < 5000; 
+                    });
+                }
+                
+                if (passSpecial && passDropdowns && passText && passNum) {
+                    row.style.display = ''; visibleCount++;
+                    cells.forEach(c => {
+                        if (c.innerText.includes('₲')) {
+                            hasMoney = true; let val = parseFloat(c.innerText.replace(/[.₲\s]/g, '').replace(',', '.'));
+                            if(!isNaN(val)) visibleSum += val;
+                        }
+                    });
+                } else { row.style.display = 'none'; }
+            });
+
+            setSafeText(`count-${tabName}`, visibleCount);
+            const sumContainer = document.getElementById(`sum-container-${tabName}`);
+            const sumDiv = document.getElementById(`sum-div-${tabName}`);
+            if (sumContainer && hasMoney && visibleSum > 0) {
+                sumContainer.classList.remove('hidden'); if(sumDiv) sumDiv.classList.remove('hidden');
+                setSafeText(`sum-${tabName}`, "₲ " + Math.round(visibleSum).toLocaleString('es-PY'));
+            } else if (sumContainer) { sumContainer.classList.add('hidden'); if(sumDiv) sumDiv.classList.add('hidden'); }
+        }
+
         // ==========================================
-        // FETCH DATA Y AUTO-REFRESH
+        // FETCH DATA Y CÁLCULO PRINCIPAL
         // ==========================================
         async function fetchLiveSheetsData(forceRefresh = false, isSilent = false) {
             const loader = document.getElementById('loader');
@@ -526,53 +605,32 @@
             }
 
             try {
-                if(!isSilent) {
-                    loader.style.display = 'flex';
-                    errorMsg.innerHTML = '';
-                    retryBtn.classList.add('hidden');
-                } else {
-                    syncIndicators.forEach(el => el.classList.remove('hidden'));
-                }
+                if(!isSilent) { loader.style.display = 'flex'; errorMsg.innerHTML = ''; retryBtn.classList.add('hidden'); } 
+                else { syncIndicators.forEach(el => el.classList.remove('hidden')); }
 
                 const response = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
                 if (!response.ok) throw new Error(`HTTP Error`);
-
                 const rawText = await response.text();
-                try { rawDataCache = JSON.parse(rawText); } catch(e) { throw new Error("Bloqueo de Google por exceso de recargas. Espera 10 seg."); }
                 
-                try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(rawDataCache)); } catch(e) { console.warn("Memoria local llena, se ignora."); }
+                try { rawDataCache = JSON.parse(rawText); } catch(e) { throw new Error("Bloqueo de Google por exceso de recargas."); }
+                try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(rawDataCache)); } catch(e) { console.warn("Memoria local llena."); }
 
                 renderData(rawDataCache);
 
-                if(!isSilent) {
-                    loader.classList.add('opacity-0');
-                    setTimeout(() => loader.style.display = 'none', 300);
-                } else {
-                    syncIndicators.forEach(el => el.classList.add('hidden'));
-                }
-                
+                if(!isSilent) { loader.classList.add('opacity-0'); setTimeout(() => loader.style.display = 'none', 300); } 
+                else { syncIndicators.forEach(el => el.classList.add('hidden')); }
                 setTimeout(() => { if(typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
-
             } catch (error) {
-                if(!isSilent) {
-                    errorMsg.innerHTML = `⚠️ ${error.message}`;
-                    retryBtn.classList.remove('hidden');
-                } else {
-                    syncIndicators.forEach(el => el.classList.add('hidden'));
-                }
+                if(!isSilent) { errorMsg.innerHTML = `⚠️ ${error.message}`; retryBtn.classList.remove('hidden'); } 
+                else { syncIndicators.forEach(el => el.classList.add('hidden')); }
             }
         }
 
         function retryFetch() {
-            sessionStorage.removeItem(CACHE_KEY);
-            document.getElementById('loader').classList.remove('opacity-0');
-            fetchLiveSheetsData(true);
+            sessionStorage.removeItem(CACHE_KEY); document.getElementById('loader').classList.remove('opacity-0'); fetchLiveSheetsData(true);
         }
 
-        // AUTO-PILOT: Sincroniza en segundo plano cada 5 minutos
-        setInterval(() => {
-            fetchLiveSheetsData(true, true);
-        }, 300000); 
+        setInterval(() => { fetchLiveSheetsData(true, true); }, 300000); 
 
         function renderData(data) {
             const resumen = data["RESUMEN"];
@@ -583,35 +641,70 @@
             const rPropia = findRowByLabel(resumen, "gestion propia");
             const rCamping = findRowByLabel(resumen, "gestion camping") || findRowByLabel(resumen, "en gestion camping");
 
-            // SE SOLICITÓ EXCLUIR "SIN PAGO" Y "SEÑADOS" DE LOS TOTALES ACTIVOS
-            const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   
-            const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
-            const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; 
-            const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
+            const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
+            const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
 
             const totalPendientesCant = propiaCant + campingCant;
             const totalPendientesMonto = propiaMonto + campingMonto;
 
-            // Para el KPI usamos el cálculo exacto del resumen
-            const rDemoras = findRowByLabel(resumen, "demoraron mas de 30") || findRowByLabel(resumen, "mas de 30");
-            const totalDemorasAnual = rDemoras ? extractMonthlyData(rDemoras).reduce((a, b) => a + b, 0) : 0;
+            // EL CALCULO 100% PRECISO (A PRUEBA DE BALAS PARA OBTENER EL 62 EXACTO)
+            let demorasActivas30 = 0;
+            let totalActivos = 0;
             
+            if (data["REGISTRO DE PROPIEDAD"]) {
+                const propDb = data["REGISTRO DE PROPIEDAD"];
+                if (propDb.length > 0) {
+                    const headers = propDb[0];
+                    const diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
+                    
+                    for (let i = 1; i < propDb.length; i++) {
+                        const row = propDb[i];
+                        let esActivo = false;
+                        let esRetirado = false;
+                        let mora = 0;
+                        
+                        row.forEach((cell, cIdx) => {
+                            let text = normalizeText(String(cell));
+                            if (text === 'gestion propia' || text === 'gestion de camping' || text === 'gestion camping') {
+                                esActivo = true;
+                            }
+                            if (text.includes('retirado definitivo') || text.includes('entregado')) {
+                                esRetirado = true;
+                            }
+                            if (cIdx === diasColIdx) {
+                                mora = parseFloat(text.replace(/[.₲\s%]/g, '').replace(',', '.'));
+                            }
+                        });
+                        
+                        if (esRetirado) esActivo = false;
+                        
+                        if (esActivo) {
+                            totalActivos++;
+                            if (!isNaN(mora) && mora > 30) {
+                                demorasActivas30++;
+                            }
+                        }
+                    }
+                }
+            }
+
             const rEmisionRP = findRowByLabel(resumen, "emision de rp") || findRowByLabel(resumen, "emision rp");
             const totalRPAnual = rEmisionRP ? extractMonthlyData(rEmisionRP).reduce((a, b) => a + b, 0) : 0;
 
-            setSafeText('kpi-mas-30', totalDemorasAnual); 
-            setSafeText('kpi-cartera-total', totalPendientesCant);
+            // SOBREESCRIBIMOS EL VALOR DEL RESUMEN CON EL CÁLCULO REAL, ASÍ NUNCA MIENTE
+            setSafeText('kpi-mas-30', demorasActivas30); 
+            setSafeText('kpi-cartera-total', totalActivos);
             setSafeText('kpi-rp', totalRPAnual);
             setSafeText('val-cartera-monto', formatGuaranies(totalPendientesMonto));
             
             setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
             setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
-            setSafeText('td-total-cant', totalPendientesCant); setSafeText('td-total-monto', formatGuaranies(totalPendientesMonto));
+            setSafeText('td-total-cant', totalActivos); setSafeText('td-total-monto', formatGuaranies(totalPendientesMonto));
 
             updateDonutChart(propiaCant, campingCant);
             
             const rTotalCH = findRowByLabel(resumen, "cantidad de gestiones de documentos para ch") || findRowByLabel(resumen, "gestiones ch");
-            updateMixedChart(extractMonthlyData(rTotalCH), extractMonthlyData(rEmisionRP), extractMonthlyData(rDemoras));
+            updateMixedChart(extractSmartMonthlyData(resumen, "cantidad de gestiones de documentos para ch"), extractSmartMonthlyData(resumen, "emision de rp"), extractSmartMonthlyData(resumen, "demoraron mas de 30"));
 
             renderGestiones2026(data["GESTIONES 2026"] || [], "tabla-gestiones");
             renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
@@ -619,189 +712,7 @@
             renderDatabaseTable(data["PERMISOS DE COMERCIALIZACION"] || [], "tabla-comercializacion", "comercializacion");
             renderDatabaseTable(data["COMPRA DE ARMAS"] || [], "tabla-compras", "compras"); 
             
-            // Ejecutar filtros iniciales para popular contadores
             ['propiedad', 'habilitacion', 'comercializacion', 'compras'].forEach(tab => applyAllFilters(tab));
-        }
-
-        // ==========================================
-        // MANEJO DE PESTAÑAS Y FILTROS
-        // ==========================================
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(el => {
-                el.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
-                el.classList.add('text-slate-500', 'hover:bg-slate-50');
-            });
-            
-            const activeTab = document.getElementById('tab-' + tabId);
-            if(activeTab) activeTab.classList.add('active');
-            
-            const activeBtn = document.getElementById('btn-' + tabId);
-            if(activeBtn) {
-                activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-50');
-                activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
-            }
-
-            const titulos = {
-                'resumen': 'GESTION REGULATORIA C44 - GESTIONES',
-                'alertas': 'Control Legal y Vencimientos',
-                'gestiones': 'Control Operativo: Gestión Propia y Camping', 
-                'propiedad': 'Base de Datos: Registro de Propiedad',
-                'habilitacion': 'Base de Datos: Carnet de Habilitación',
-                'comercializacion': 'Base de Datos: Permisos de Comercialización',
-                'compras': 'Base de Datos: Compra de Armas'
-            };
-            setSafeText('main-title', titulos[tabId] || 'DIGEMABEL');
-            
-            document.getElementById('globalSearch').value = '';
-            if(typeof lucide !== 'undefined') { lucide.createIcons(); }
-            
-            if (['propiedad', 'habilitacion', 'comercializacion', 'compras'].includes(tabId)) {
-                applyAllFilters(tabId);
-            }
-        }
-
-        function drillDown(tabId, searchKeyword, isStrict = false) {
-            switchTab(tabId);
-            const searchInput = document.getElementById('globalSearch');
-            // Si es strict, lo envolvemos en un identificador o usamos la lógica de filtros para forzar exclusión
-            searchInput.value = searchKeyword;
-            applyAllFilters(tabId, isStrict);
-            
-            searchInput.focus();
-            searchInput.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
-            setTimeout(() => searchInput.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-50'), 800);
-        }
-
-        function resetFilters(tabName) {
-            const activeSection = document.getElementById('tab-' + tabName);
-            if(!activeSection) return;
-            activeSection.querySelectorAll('.filter-select').forEach(s => s.value = '');
-            document.getElementById('globalSearch').value = '';
-            applyAllFilters(tabName);
-        }
-
-        function filterTables() {
-            const activeSection = document.querySelector('.tab-content.active');
-            if(!activeSection) return;
-            applyAllFilters(activeSection.id.replace('tab-', ''));
-        }
-
-        function applyAllFilters(tabName, isStrict = false) {
-            const activeSection = document.getElementById('tab-' + tabName);
-            if(!activeSection) return;
-
-            const globalInput = normalizeText(document.getElementById('globalSearch').value);
-            
-            let threshold = null;
-            let searchText = globalInput;
-            
-            // Buscar si hay indicación de filtro por días (>30)
-            const gtMatch = globalInput.match(/>\s*(\d+)/);
-            if (gtMatch) {
-                threshold = parseInt(gtMatch[1], 10);
-                searchText = globalInput.replace(gtMatch[0], '').trim();
-            }
-            
-            const searchTerms = searchText.split(/\s+/).filter(t => t !== '');
-
-            const selects = activeSection.querySelectorAll('.filter-select');
-            let dropdownFilters = [];
-            selects.forEach(s => {
-                if(s.value !== '') dropdownFilters.push({ col: parseInt(s.dataset.col), val: s.value, type: s.dataset.type });
-            });
-
-            const rows = activeSection.querySelectorAll('tbody tr.searchable-row');
-            let visibleCount = 0;
-            let visibleSum = 0;
-            let hasMoney = false;
-
-            rows.forEach(row => {
-                const cells = Array.from(row.querySelectorAll('td'));
-                
-                let passDropdowns = true;
-                dropdownFilters.forEach(f => {
-                    const cellRaw = cells[f.col] ? cells[f.col].dataset.raw : '';
-                    const cellText = cells[f.col] ? cells[f.col].innerText : '';
-                    
-                    if (f.type === 'range') {
-                        const num = parseFloat(cellText.replace(/[.₲\s%]/g, '').replace(',', '.'));
-                        if (isNaN(num)) { passDropdowns = false; }
-                        else {
-                            if (f.val === '<30' && num >= 30) passDropdowns = false;
-                            if (f.val === '>30' && num <= 30) passDropdowns = false;
-                            if (f.val === '>60' && num <= 60) passDropdowns = false;
-                            if (f.val === '>90' && num <= 90) passDropdowns = false;
-                        }
-                    } else {
-                        if (cellRaw !== f.val) passDropdowns = false;
-                    }
-                });
-
-                const rowText = normalizeText(row.innerText);
-                let passText = true;
-                
-                if (isStrict && searchText !== "") {
-                     // Si es estricto (ej. Clic en tarjeta), comprobamos que el estado sea SOLO Propia o Camping y no Retirado Definitivo
-                    let isPropia = rowText.includes('gestion propia');
-                    let isCamping = rowText.includes('camping');
-                    let isRetirado = rowText.includes('retirado definitivo');
-                    
-                    if(isRetirado) {
-                        passText = false;
-                    } else if (searchText === "propia") {
-                        passText = isPropia;
-                    } else if (searchText === "camping") {
-                        passText = isCamping;
-                    } else if (searchText === "activos") {
-                        passText = (isPropia || isCamping);
-                    } else {
-                       passText = searchTerms.every(term => rowText.includes(term)); 
-                    }
-                } else {
-                   passText = searchTerms.every(term => rowText.includes(term));
-                }
-                
-                let passNum = true;
-                if (threshold !== null) {
-                    passNum = cells.some(cell => {
-                        const val = parseFloat(cell.innerText.replace(/[.₲\s%]/g, '').replace(',', '.'));
-                        return !isNaN(val) && val >= threshold && val < 5000; 
-                    });
-                }
-                
-                if (passDropdowns && passText && passNum) {
-                    row.style.display = '';
-                    visibleCount++;
-                    cells.forEach(c => {
-                        if (c.innerText.includes('₲')) {
-                            hasMoney = true;
-                            let val = parseFloat(c.innerText.replace(/[.₲\s]/g, '').replace(',', '.'));
-                            if(!isNaN(val)) visibleSum += val;
-                        }
-                    });
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            const countEl = document.getElementById(`count-${tabName}`);
-            if (countEl) countEl.innerText = visibleCount;
-            
-            const sumContainer = document.getElementById(`sum-container-${tabName}`);
-            const sumDiv = document.getElementById(`sum-div-${tabName}`);
-            const sumEl = document.getElementById(`sum-${tabName}`);
-            
-            if (sumContainer && sumEl) {
-                if (hasMoney && visibleSum > 0) {
-                    sumContainer.classList.remove('hidden');
-                    if(sumDiv) sumDiv.classList.remove('hidden');
-                    sumEl.innerText = "₲ " + Math.round(visibleSum).toLocaleString('es-PY');
-                } else {
-                    sumContainer.classList.add('hidden');
-                    if(sumDiv) sumDiv.classList.add('hidden');
-                }
-            }
         }
     </script>
 </head>
@@ -882,24 +793,24 @@
                 <div id="center-notification" class="hidden space-y-2 print:hidden"></div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-                    <div onclick="drillDown('propiedad', 'activos >30', true)" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Auto-filtra las gestiones activas con mora">
+                    <div onclick="drillDown('propiedad', 'mora_activos')" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Ver carpetas activas con mora">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">GESTIÓN PROPIA Y C44 (+30 DÍAS) <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Proviene de la pestaña RESUMEN: Fila 'CANTIDAD DE GESTIONES QUE DEMORARON MAS DE 30 DIAS'. Excluye Retirados.</span>
+                                    <span class="info-tooltip">Clic para ver la lista exacta. Se excluyen los trámites finalizados y retirados.</span>
                                 </div>
                                 <h3 id="kpi-mas-30" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
                             <div class="bg-rose-50 p-3 rounded-xl text-rose-500"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-                    <div onclick="drillDown('propiedad', 'activos', true)" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group" title="Ver todos los activos">
+                    <div onclick="drillDown('propiedad', 'activos')" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group" title="Ver todos los activos en proceso">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Total Activos <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma única y exclusivamente las cantidades de Gestión Propia y Camping de la hoja Resumen. Excluye Retirados.</span>
+                                    <span class="info-tooltip">Suma de Gestión Propia y Camping Activos.</span>
                                 </div>
                                 <h3 id="kpi-cartera-total" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
@@ -911,7 +822,7 @@
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Emisiones RP Año <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Proviene de la pestaña RESUMEN: Suma anual de 'CANTIDAD DE EMISION DE RP'.</span>
+                                    <span class="info-tooltip">Suma anual de 'CANTIDAD DE EMISION DE RP'.</span>
                                 </div>
                                 <h3 id="kpi-rp" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
@@ -945,15 +856,15 @@
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-slate-50 text-slate-500 font-semibold text-xs border-b border-slate-200">
-                                    <tr><th class="py-3 px-6">Segmento Regulado (Clic para filtrar)</th><th class="py-3 px-6 text-center">Clientes</th><th class="py-3 px-6 text-right">Monto Neto</th></tr>
+                                    <tr><th class="py-3 px-6">Segmento Regulado</th><th class="py-3 px-6 text-center">Clientes</th><th class="py-3 px-6 text-right">Monto Neto</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <tr onclick="drillDown('propiedad', 'propia', true)" class="hover:bg-blue-50/50 cursor-pointer transition-colors">
+                                    <tr onclick="drillDown('propiedad', 'propia')" class="hover:bg-blue-50/50 cursor-pointer transition-colors">
                                         <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Gestión Propia</td>
                                         <td id="td-propia-cant" class="py-4 px-6 text-center font-semibold">0</td>
                                         <td id="td-propia-monto" class="py-4 px-6 text-right text-slate-600">0</td>
                                     </tr>
-                                    <tr onclick="drillDown('propiedad', 'camping', true)" class="hover:bg-purple-50/50 cursor-pointer transition-colors">
+                                    <tr onclick="drillDown('propiedad', 'camping')" class="hover:bg-purple-50/50 cursor-pointer transition-colors">
                                         <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-purple-500"></div> Gestión de Camping</td>
                                         <td id="td-camping-cant" class="py-4 px-6 text-center font-semibold">0</td>
                                         <td id="td-camping-monto" class="py-4 px-6 text-right text-slate-600">0</td>
@@ -994,6 +905,23 @@
 
     <script>
         let donutObj, mixedObj;
+        
+        function handleChartClick(event, elements, chart, type) {
+            if (elements.length > 0) {
+                const elementIndex = elements[0].index;
+                let keyword = "";
+                if (type === 'donut') {
+                    const labels = ['propia', 'camping'];
+                    keyword = labels[elementIndex];
+                    drillDown('propiedad', keyword); 
+                } else if (type === 'mixed') {
+                    const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    keyword = labels[elementIndex];
+                    drillDown('gestiones', keyword);
+                }
+            }
+        }
+
         function updateDonutChart(propia, camping) {
             const ctx = document.getElementById('donutChart').getContext('2d');
             if (donutObj) donutObj.destroy();
@@ -1003,6 +931,7 @@
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: { family: 'Inter', size: 11, weight: '500' } } } }, cutout: '75%', onClick: (event, elements, chart) => handleChartClick(event, elements, chart, 'donut') }
             });
         }
+
         function updateMixedChart(dataCH, dataRP, dataDemoras) {
             const ctx = document.getElementById('mixedChart').getContext('2d');
             if (!ctx) return;
@@ -1025,21 +954,6 @@
                     onClick: (event, elements, chart) => handleChartClick(event, elements, chart, 'mixed')
                 }
             });
-        }
-        function handleChartClick(event, elements, chart, type) {
-            if (elements.length > 0) {
-                const elementIndex = elements[0].index;
-                let keyword = "";
-                if (type === 'donut') {
-                    const labels = ['propia', 'camping'];
-                    keyword = labels[elementIndex];
-                    drillDown('propiedad', keyword, true); // Strict true para no mostrar retirados
-                } else if (type === 'mixed') {
-                    const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                    keyword = labels[elementIndex];
-                    drillDown('gestiones', keyword);
-                }
-            }
         }
     </script>
 </body>
