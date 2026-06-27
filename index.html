@@ -60,7 +60,7 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V11_FINAL";
+        const CACHE_KEY = "DIGEMABEL_CACHE_FINAL";
         let rawDataCache = null; 
 
         // --- UTILIDADES BÁSICAS ---
@@ -386,7 +386,7 @@
 
             let tableHtml = `<div class='modern-table-container'><table class='modern-table' id='table-${tabName}'><thead><tr>`;
             headers.forEach(h => {
-                tableHtml += `<th onclick="sortTable(this)">${String(h).trim()} <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>`;
+                tableHtml += `<th onclick="sortTable(this)">${String(h).trim()} <i data-lucide="chevron-down" class="inline w-3 h-3 text-slate-300"></i></th>`;
             });
             tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
 
@@ -471,7 +471,7 @@
                     if(options.length > 0 && options.length < 50) { 
                         filtersHtml += `
                         <select class="filter-select" data-col="${colIndex}" data-type="exact" onchange="applyAllFilters('${tabName}')">
-                            <option value="">Filtrar: ${title}</option>
+                            <option value="">Filtro: ${title}</option>
                             ${options.map(o => `<option value="${normalizeText(o)}">${o}</option>`).join('')}
                         </select>`;
                     }
@@ -584,32 +584,22 @@
             const rCamping = findRowByLabel(resumen, "gestion camping") || findRowByLabel(resumen, "en gestion camping");
 
             // SE SOLICITÓ EXCLUIR "SIN PAGO" Y "SEÑADOS" DE LOS TOTALES ACTIVOS
-            const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
-            const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
+            const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   
+            const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
+            const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; 
+            const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
 
             const totalPendientesCant = propiaCant + campingCant;
             const totalPendientesMonto = propiaMonto + campingMonto;
 
-            const rTotalCH = findRowByLabel(resumen, "cantidad de gestiones de documentos para ch") || findRowByLabel(resumen, "gestiones ch");
-            const rEmisionRP = findRowByLabel(resumen, "emision de rp") || findRowByLabel(resumen, "emision rp");
-
-            const totalRPAnual = extractMonthlyData(rEmisionRP).reduce((a, b) => a + b, 0);
+            // Para el KPI usamos el cálculo exacto del resumen
+            const rDemoras = findRowByLabel(resumen, "demoraron mas de 30") || findRowByLabel(resumen, "mas de 30");
+            const totalDemorasAnual = rDemoras ? extractMonthlyData(rDemoras).reduce((a, b) => a + b, 0) : 0;
             
-            // EL RADAR DE DEMORAS AHORA MIDE "PROPIA" Y "CAMPING" COMO PIDIÓ REGULATORIA
-            let demorasActivas30 = 0;
-            if (data["REGISTRO DE PROPIEDAD"]) {
-                data["REGISTRO DE PROPIEDAD"].forEach((row, idx) => {
-                    if (idx === 0) return; 
-                    const rowStr = normalizeText(row.join(' '));
-                    if (rowStr.includes('camping') || rowStr.includes('propia')) {
-                        if (row.some(cell => { let v = parseFloat(cell); return !isNaN(v) && v > 30 && v < 5000; })) {
-                            demorasActivas30++;
-                        }
-                    }
-                });
-            }
+            const rEmisionRP = findRowByLabel(resumen, "emision de rp") || findRowByLabel(resumen, "emision rp");
+            const totalRPAnual = rEmisionRP ? extractMonthlyData(rEmisionRP).reduce((a, b) => a + b, 0) : 0;
 
-            setSafeText('kpi-mas-30', demorasActivas30); 
+            setSafeText('kpi-mas-30', totalDemorasAnual); 
             setSafeText('kpi-cartera-total', totalPendientesCant);
             setSafeText('kpi-rp', totalRPAnual);
             setSafeText('val-cartera-monto', formatGuaranies(totalPendientesMonto));
@@ -619,11 +609,11 @@
             setSafeText('td-total-cant', totalPendientesCant); setSafeText('td-total-monto', formatGuaranies(totalPendientesMonto));
 
             updateDonutChart(propiaCant, campingCant);
-            updateMixedChart(extractMonthlyData(rTotalCH), extractMonthlyData(rEmisionRP), extractMonthlyData(findRowByLabel(resumen, "demoraron mas de 30")));
-
-            // ACA USAMOS EL NUEVO NOMBRE "Gestión Propia y Camping" que se conecta a "GESTIONES 2026"
-            renderGestiones2026(data["GESTIONES 2026"] || [], "tabla-gestiones");
             
+            const rTotalCH = findRowByLabel(resumen, "cantidad de gestiones de documentos para ch") || findRowByLabel(resumen, "gestiones ch");
+            updateMixedChart(extractMonthlyData(rTotalCH), extractMonthlyData(rEmisionRP), extractMonthlyData(rDemoras));
+
+            renderGestiones2026(data["GESTIONES 2026"] || [], "tabla-gestiones");
             renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
             renderDatabaseTable(data["CARNET DE HABILITACION"] || [], "tabla-habilitacion", "habilitacion");
             renderDatabaseTable(data["PERMISOS DE COMERCIALIZACION"] || [], "tabla-comercializacion", "comercializacion");
@@ -671,11 +661,12 @@
             }
         }
 
-        function drillDown(tabId, searchKeyword) {
+        function drillDown(tabId, searchKeyword, isStrict = false) {
             switchTab(tabId);
             const searchInput = document.getElementById('globalSearch');
+            // Si es strict, lo envolvemos en un identificador o usamos la lógica de filtros para forzar exclusión
             searchInput.value = searchKeyword;
-            applyAllFilters(tabId);
+            applyAllFilters(tabId, isStrict);
             
             searchInput.focus();
             searchInput.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
@@ -696,7 +687,7 @@
             applyAllFilters(activeSection.id.replace('tab-', ''));
         }
 
-        function applyAllFilters(tabName) {
+        function applyAllFilters(tabName, isStrict = false) {
             const activeSection = document.getElementById('tab-' + tabName);
             if(!activeSection) return;
 
@@ -704,11 +695,14 @@
             
             let threshold = null;
             let searchText = globalInput;
+            
+            // Buscar si hay indicación de filtro por días (>30)
             const gtMatch = globalInput.match(/>\s*(\d+)/);
             if (gtMatch) {
                 threshold = parseInt(gtMatch[1], 10);
                 searchText = globalInput.replace(gtMatch[0], '').trim();
             }
+            
             const searchTerms = searchText.split(/\s+/).filter(t => t !== '');
 
             const selects = activeSection.querySelectorAll('.filter-select');
@@ -745,7 +739,28 @@
                 });
 
                 const rowText = normalizeText(row.innerText);
-                const passText = searchTerms.every(term => rowText.includes(term));
+                let passText = true;
+                
+                if (isStrict && searchText !== "") {
+                     // Si es estricto (ej. Clic en tarjeta), comprobamos que el estado sea SOLO Propia o Camping y no Retirado Definitivo
+                    let isPropia = rowText.includes('gestion propia');
+                    let isCamping = rowText.includes('camping');
+                    let isRetirado = rowText.includes('retirado definitivo');
+                    
+                    if(isRetirado) {
+                        passText = false;
+                    } else if (searchText === "propia") {
+                        passText = isPropia;
+                    } else if (searchText === "camping") {
+                        passText = isCamping;
+                    } else if (searchText === "activos") {
+                        passText = (isPropia || isCamping);
+                    } else {
+                       passText = searchTerms.every(term => rowText.includes(term)); 
+                    }
+                } else {
+                   passText = searchTerms.every(term => rowText.includes(term));
+                }
                 
                 let passNum = true;
                 if (threshold !== null) {
@@ -867,24 +882,24 @@
                 <div id="center-notification" class="hidden space-y-2 print:hidden"></div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-                    <div onclick="drillDown('propiedad', '>30')" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Auto-filtra las gestiones con mora">
+                    <div onclick="drillDown('propiedad', 'activos >30', true)" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Auto-filtra las gestiones activas con mora">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">GESTIÓN PROPIA Y C44 (+30 DÍAS) <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Proviene de la pestaña RESUMEN: Fila 'CANTIDAD DE GESTIONES QUE DEMORARON MAS DE 30 DIAS'. Clic para ver lista.</span>
+                                    <span class="info-tooltip">Proviene de la pestaña RESUMEN: Fila 'CANTIDAD DE GESTIONES QUE DEMORARON MAS DE 30 DIAS'. Excluye Retirados.</span>
                                 </div>
                                 <h3 id="kpi-mas-30" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
                             <div class="bg-rose-50 p-3 rounded-xl text-rose-500"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-                    <div onclick="drillDown('propiedad', '')" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group">
+                    <div onclick="drillDown('propiedad', 'activos', true)" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group" title="Ver todos los activos">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Total Activos <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma única y exclusivamente las cantidades de Gestión Propia y Camping de la hoja Resumen.</span>
+                                    <span class="info-tooltip">Suma única y exclusivamente las cantidades de Gestión Propia y Camping de la hoja Resumen. Excluye Retirados.</span>
                                 </div>
                                 <h3 id="kpi-cartera-total" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
@@ -908,7 +923,7 @@
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Capital Pendiente <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma monetaria en Guaraníes exclusiva de Gestión Propia y Camping.</span>
+                                    <span class="info-tooltip">Suma monetaria en Guaraníes exclusiva de Gestión Propia y Camping Activos.</span>
                                 </div>
                                 <h3 id="val-cartera-monto" class="text-2xl font-bold text-emerald-600 mt-2">₲ 0</h3>
                             </div>
@@ -933,12 +948,12 @@
                                     <tr><th class="py-3 px-6">Segmento Regulado (Clic para filtrar)</th><th class="py-3 px-6 text-center">Clientes</th><th class="py-3 px-6 text-right">Monto Neto</th></tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <tr onclick="drillDown('propiedad', 'propia')" class="hover:bg-blue-50/50 cursor-pointer transition-colors">
+                                    <tr onclick="drillDown('propiedad', 'propia', true)" class="hover:bg-blue-50/50 cursor-pointer transition-colors">
                                         <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Gestión Propia</td>
                                         <td id="td-propia-cant" class="py-4 px-6 text-center font-semibold">0</td>
                                         <td id="td-propia-monto" class="py-4 px-6 text-right text-slate-600">0</td>
                                     </tr>
-                                    <tr onclick="drillDown('propiedad', 'camping')" class="hover:bg-purple-50/50 cursor-pointer transition-colors">
+                                    <tr onclick="drillDown('propiedad', 'camping', true)" class="hover:bg-purple-50/50 cursor-pointer transition-colors">
                                         <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-purple-500"></div> Gestión de Camping</td>
                                         <td id="td-camping-cant" class="py-4 px-6 text-center font-semibold">0</td>
                                         <td id="td-camping-monto" class="py-4 px-6 text-right text-slate-600">0</td>
@@ -963,7 +978,7 @@
                     <i data-lucide="scale" class="w-6 h-6 flex-shrink-0 text-indigo-600"></i>
                     <div>
                         <h4 class="font-bold text-sm">Radar de Control Legal Permanente</h4>
-                        <p class="text-xs mt-1">Este módulo monitorea en tiempo real los vencimientos de contratos, instructores y licencias comerciales registrados en el ecosistema.</p>
+                        <p class="text-xs mt-1">Este módulo monitorea en tiempo real los vencimientos de contratos, instructores y licencias comerciales de la empresa registrados en el Sheets.</p>
                     </div>
                 </div>
                 <div id="alertas-container"></div>
@@ -1018,7 +1033,7 @@
                 if (type === 'donut') {
                     const labels = ['propia', 'camping'];
                     keyword = labels[elementIndex];
-                    drillDown('propiedad', keyword);
+                    drillDown('propiedad', keyword, true); // Strict true para no mostrar retirados
                 } else if (type === 'mixed') {
                     const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
                     keyword = labels[elementIndex];
