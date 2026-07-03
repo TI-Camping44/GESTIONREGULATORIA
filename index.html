@@ -58,10 +58,10 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V27_LAYOUT";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V28";
         let rawDataCache = null; 
 
-        // --- UTILIDADES ---
+        // --- 1. UTILIDADES Y PARSEADORES ---
         function normalizeText(text) {
             if (!text) return "";
             return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -112,6 +112,13 @@
         function extractNumbersFromRow(row) {
             if (!row) return [];
             return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
+        }
+
+        function extractMonthlyData(row) {
+            let data = [];
+            if(!row) return Array(12).fill(0);
+            for(let i=1; i<=12; i++) data.push(cleanAndParseNumber(row[i]));
+            return data;
         }
 
         function extractSmartMonthlyData(resumenMatrix, keyword) {
@@ -182,7 +189,6 @@
             return rows.map(row => row.filter((_, c) => colsToKeep.includes(c)));
         }
 
-        // FUNCIÓN CLAVE PARA FILTRAR SOLO LAS COLUMNAS A, B, E, F, G, K, U
         function extractSpecificColumns(matrix) {
             if (!matrix || matrix.length === 0) return [];
             return matrix.map(row => {
@@ -192,7 +198,7 @@
             });
         }
 
-        // --- SISTEMAS DE COPIA Y EXPORTACIÓN ---
+        // --- 2. SISTEMAS DE COPIA Y EXPORTACIÓN ---
         function copyToClipboard(cliente, dias, estado, tabName) {
             const msg = `⚠️ *Alerta DIGEMABEL*\nCliente: ${cliente}\nTrámite: ${tabName.toUpperCase()}\nEstado: ${estado}\nDemora Actual: ${dias} días.\nPor favor, verificar estatus urgentemente.`;
             navigator.clipboard.writeText(msg).then(() => {
@@ -228,58 +234,7 @@
             document.body.removeChild(link);
         }
 
-        // --- GENERADORES VISUALES ---
-        function renderAlertas(matrix) {
-            const container = document.getElementById('alertas-container');
-            const centerNotification = document.getElementById('center-notification');
-            if (!matrix || matrix.length === 0) return;
-
-            let html = ''; let criticalNotificationHtml = '';
-            let startIndex = matrix.findIndex(row => row.some(c => normalizeText(String(c)).includes('fecha de vencimiento')));
-            
-            if (startIndex !== -1) {
-                const headerRow = matrix[startIndex];
-                const itemCol = headerRow.findIndex(c => normalizeText(String(c)).includes('item'));
-                const dateCol = headerRow.findIndex(c => normalizeText(String(c)).includes('vencimiento'));
-                const c1 = itemCol !== -1 ? itemCol : 0; const c2 = dateCol !== -1 ? dateCol : 1;
-
-                html += `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">`;
-                for (let i = startIndex + 1; i < matrix.length; i++) {
-                    const row = matrix[i];
-                    const itemStr = String(row[c1] || '').trim(); const dateStr = String(row[c2] || '').trim();
-                    if (itemStr === '') continue; 
-                    if (normalizeText(itemStr).includes('resumen') || normalizeText(itemStr).includes('total')) break; 
-
-                    let prettyDate = formatBeautifulDate(dateStr); let daysLeft = 999; 
-                    if(dateStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
-                        const diff = new Date(dateStr) - new Date();
-                        daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                    } else {
-                        const numbers = extractNumbersFromRow(row);
-                        if(numbers.length > 0) daysLeft = numbers[0]; 
-                    }
-
-                    let borderClass = "border-l-emerald-500"; let bgIconClass = "bg-emerald-50 text-emerald-500"; let textClass = "text-emerald-600"; let statusText = "Vigente"; let icon = "check-circle";
-
-                    if (daysLeft < 0 || daysLeft <= 30) { 
-                        borderClass = "border-l-rose-500"; bgIconClass = "bg-rose-50 text-rose-500"; textClass = "text-rose-600"; statusText = daysLeft < 0 ? "Vencido" : "Crítico"; icon = "alert-octagon";
-                        criticalNotificationHtml += `
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-rose-50 border border-rose-200 text-rose-800 px-4 py-3 rounded-xl shadow-sm animate-pulse mb-3 gap-3">
-                            <div class="flex items-center gap-3"><i data-lucide="shield-alert" class="w-6 h-6 text-rose-600 flex-shrink-0"></i><div><span class="text-xs font-black uppercase tracking-wide block">Alerta de Gobernanza Legal</span><span class="text-sm font-medium">El ítem <strong>"${itemStr}"</strong> registra estatus <strong>${statusText} (${daysLeft} días)</strong>.</span></div></div>
-                            <button onclick="switchTab('alertas')" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-bold px-4 py-2 rounded-lg transition-all shadow-sm w-full sm:w-auto">Gestionar Alerta</button>
-                        </div>`;
-                    } else if (daysLeft <= 90) { borderClass = "border-l-amber-500"; bgIconClass = "bg-amber-50 text-amber-500"; textClass = "text-amber-600"; statusText = "Próximo a Vencer"; icon = "clock"; }
-
-                    if (isNaN(daysLeft) && prettyDate === '') { statusText = "Sin fecha"; textClass = "text-slate-400"; borderClass = "border-l-slate-300"; bgIconClass = "bg-slate-50 text-slate-400"; icon = "help-circle"; }
-
-                    html += `<div class="glass-card ${borderClass} border-l-4 p-5 flex items-start gap-4 hover:-translate-y-1 transition-transform"><div class="${bgIconClass} p-2.5 rounded-xl shadow-inner"><i data-lucide="${icon}" class="w-6 h-6"></i></div><div><h4 class="text-sm font-black text-slate-800">${itemStr}</h4><p class="text-xs font-semibold text-slate-500 mt-1">Vence: <span class="${textClass}">${prettyDate || 'N/A'}</span></p>${daysLeft !== 999 && !isNaN(daysLeft) ? `<p class="text-[10px] font-black ${textClass} uppercase tracking-widest mt-2 bg-slate-50 inline-block px-2 py-0.5 rounded border border-slate-100">${statusText} (${daysLeft} días)</p>` : ''}</div></div>`;
-                }
-                html += `</div>`;
-            }
-            container.innerHTML = html !== '' ? html : `<p class="text-sm text-slate-500 font-medium">No se detectaron alertas programadas.</p>`;
-            if(criticalNotificationHtml !== '') { centerNotification.innerHTML = criticalNotificationHtml; centerNotification.classList.remove('hidden'); } else { centerNotification.classList.add('hidden'); }
-        }
-
+        // --- 3. GENERADORES VISUALES ---
         function renderGestionArmas(matrix, containerId) {
             const container = document.getElementById(containerId);
             if (!matrix || matrix.length === 0) {
@@ -385,7 +340,6 @@
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
             
-            // FILTRO DE COLUMNAS EXACTAS ANTES DE DIBUJAR
             const filteredRaw = extractSpecificColumns(rawMatrix);
             const matrix = purifyMatrix(filteredRaw);
 
@@ -511,7 +465,7 @@
             const activeBtn = document.getElementById('btn-' + tabId);
             if(activeBtn) { activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-50'); activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md'); }
 
-            const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'alertas': 'Control Legal y Vencimientos', 'gestiones': 'Control Operativo: Gestión Propia y Camping', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
+            const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'gestiones': 'Control Operativo: Gestión Propia y Camping', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
             setSafeText('main-title', titulos[tabId] || 'DIGEMABEL');
             
             document.getElementById('globalSearch').value = '';
@@ -593,18 +547,15 @@
             rows.forEach(row => {
                 const cells = Array.from(row.querySelectorAll('td'));
                 
-                // LECTURA DEL CANDADO DE DATOS
                 let passSpecial = true;
                 const estado = row.getAttribute('data-estado') || "";
                 const moraDias = parseFloat(row.getAttribute('data-mora')) || 0;
 
                 let isPropiaOrCamping = estado.includes('propia') || estado.includes('camping');
-                let isActivoTotal = isPropiaOrCamping || estado.includes('señado') || estado.includes('senado') || estado.includes('sin pago');
                 let isRetirado = estado.includes('retirado') || estado.includes('entregado') || estado.includes('nota de credito');
 
                 if (isRetirado) {
                     isPropiaOrCamping = false;
-                    isActivoTotal = false;
                 }
 
                 if (specialFilter === 'mora_activos') {
@@ -612,7 +563,7 @@
                 } else if (specialFilter === 'al_dia_propios') {
                     if (!isPropiaOrCamping || moraDias <= 30 === false) passSpecial = false;
                 } else if (specialFilter === 'activos') {
-                    if (!isActivoTotal) passSpecial = false;
+                    if (!isPropiaOrCamping) passSpecial = false;
                 }
 
                 let passDropdowns = true;
@@ -710,8 +661,6 @@
         function renderData(data) {
             const resumen = data["RESUMEN"];
             if (!resumen) return;
-            
-            // renderAlertas(resumen); // DESACTIVADO SEGÚN SOLICITUD ANTERIOR
 
             const rPropia = findRowByLabel(resumen, "gestion propia");
             const rCamping = findRowByLabel(resumen, "gestion camping") || findRowByLabel(resumen, "en gestion camping");
@@ -719,24 +668,17 @@
             const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
             const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
 
-            const rSenado = findRowByLabel(resumen, "señado") || findRowByLabel(resumen, "senado");
-            const rSinPago = findRowByLabel(resumen, "sin pago") || findRowByLabel(resumen, "sin pago alguno");
-
-            const senadoCant = (extractNumbersFromRow(rSenado)[0]) || 0;   const senadoMonto = (extractNumbersFromRow(rSenado)[1]) || 0;
-            const sinPagoCant = (extractNumbersFromRow(rSinPago)[0]) || 0; const sinPagoMonto = (extractNumbersFromRow(rSinPago)[1]) || 0;
-
-            const totalActivosCantResumen = propiaCant + campingCant + senadoCant + sinPagoCant;
-            const totalActivosMontoResumen = propiaMonto + campingMonto + senadoMonto + sinPagoMonto;
-
-            // EL CALCULO EXACTO DESDE LA BASE CRUDA
             let demorasActivas30 = 0;
             let alDiaPropios = 0;
+            let totalActivos = 0;
+            let capitalPendienteTotal = 0;
             
             const propDb = purifyMatrix(data["REGISTRO DE PROPIEDAD"] || []);
             if (propDb.length > 0) {
                 const headers = propDb[0];
                 const diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
                 const estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
+                const precioColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t === 'precio' || t.includes('monto'); });
                 
                 for (let i = 1; i < propDb.length; i++) {
                     const row = propDb[i];
@@ -752,7 +694,12 @@
                     let diasVal = diasColIdx !== -1 ? row[diasColIdx] : 0;
                     let mora = parseFloat(String(diasVal).replace(/[.₲\s%]/g, '').replace(',', '.'));
 
+                    let precioVal = precioColIdx !== -1 ? cleanAndParseNumber(row[precioColIdx]) : 0;
+                    
                     if (isPropiaOrCamping) {
+                        totalActivos++;
+                        capitalPendienteTotal += precioVal;
+                        
                         if (!isNaN(mora)) {
                             if (mora > 30) {
                                 demorasActivas30++;
@@ -764,20 +711,14 @@
                 }
             }
 
-            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS (A prueba de balas)
             setSafeText('kpi-mas-30', demorasActivas30); 
-            setSafeText('kpi-cartera-total', totalActivosCantResumen);
+            setSafeText('kpi-cartera-total', totalActivos);
             setSafeText('kpi-menos-30', alDiaPropios); 
-            setSafeText('val-cartera-monto', formatGuaranies(totalActivosMontoResumen));
+            setSafeText('val-cartera-monto', formatGuaranies(capitalPendienteTotal));
             
             setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
             setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
-            setSafeText('td-total-cant', propiaCant + campingCant); setSafeText('td-total-monto', formatGuaranies(propiaMonto + campingMonto));
-
-            // TABLA SECUNDARIA (Señados y Sin Pago)
-            setSafeText('td-senado-cant', senadoCant); setSafeText('td-senado-monto', formatGuaranies(senadoMonto));
-            setSafeText('td-sinpago-cant', sinPagoCant); setSafeText('td-sinpago-monto', formatGuaranies(sinPagoMonto));
-            setSafeText('td-total-secundaria-cant', senadoCant + sinPagoCant); setSafeText('td-total-secundaria-monto', formatGuaranies(senadoMonto + sinPagoMonto));
+            setSafeText('td-total-cant', totalActivos); setSafeText('td-total-monto', formatGuaranies(capitalPendienteTotal));
 
             updateDonutChart(propiaCant, campingCant);
             
@@ -786,7 +727,6 @@
             const rDemorasGrafico = extractSmartMonthlyData(resumen, "demoraron mas de 30"); 
             updateMixedChart(rTotalCH, rEmisionRP, rDemorasGrafico);
 
-            // NUEVA TABLA: GESTIÓN DE ARMAS
             renderGestionArmas(data["GESTIONES"] || [], "tabla-gestion-armas");
 
             renderGestiones2026(data["GESTIONES 2026"] || [], "tabla-gestiones");
@@ -869,8 +809,7 @@
         <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
             
             <section id="tab-resumen" class="tab-content active space-y-8">
-                <div id="center-notification" class="hidden space-y-2 print:hidden"></div>
-
+                
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                     <div onclick="drillDown('propiedad', 'mora_activos')" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Ver carpetas activas con mora">
                         <div class="flex justify-between items-start">
@@ -885,29 +824,29 @@
                         </div>
                     </div>
                     
-                    <div onclick="drillDown('propiedad', 'al_dia_propios')" class="clickable-card glass-card border-t-4 border-t-purple-500 p-6 relative group" title="Ver clientes sanos de Propia y Camping">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <div class="tooltip-container">
-                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">CLIENTES CON MENOS DE 30 DÍAS <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Cuántos clientes cuentan con menos de 30 días en Gestión Propia y Gestión Camping exclusivamente. Clic para filtrar.</span>
-                                </div>
-                                <h3 id="kpi-menos-30" class="text-4xl font-bold text-slate-800">0</h3>
-                            </div>
-                            <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
-                        </div>
-                    </div>
-
                     <div onclick="drillDown('propiedad', 'activos')" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group" title="Ver todos los activos en proceso">
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Total Activos <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma de Gestión Propia, Gestión Camping, Señado y Sin Pago. Excluye Retirados y Notas de Crédito.</span>
+                                    <span class="info-tooltip">Suma de Gestión Propia y Gestión Camping exclusivamente.</span>
                                 </div>
                                 <h3 id="kpi-cartera-total" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
                             <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i data-lucide="users" class="w-6 h-6"></i></div>
+                        </div>
+                    </div>
+                    
+                    <div onclick="drillDown('propiedad', 'al_dia_propios')" class="clickable-card glass-card border-t-4 border-t-purple-500 p-6 relative group" title="Ver clientes sanos de Propia y Camping">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <div class="tooltip-container">
+                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">CLIENTES CON MENOS DE 30 DÍAS <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Cuántos clientes cuentan con menos de 30 días en Gestión Propia y Gestión Camping exclusivamente.</span>
+                                </div>
+                                <h3 id="kpi-menos-30" class="text-4xl font-bold text-slate-800">0</h3>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
                     
@@ -916,7 +855,7 @@
                             <div>
                                 <div class="tooltip-container">
                                     <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">Capital Pendiente <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Suma monetaria en Guaraníes de todos los Activos (Propia, Camping, Señado y Sin Pago).</span>
+                                    <span class="info-tooltip">Suma monetaria en Guaraníes exclusiva de Gestión Propia y Gestión Camping.</span>
                                 </div>
                                 <h3 id="val-cartera-monto" class="text-2xl font-bold text-emerald-600 mt-2">₲ 0</h3>
                             </div>
@@ -977,38 +916,8 @@
                     <div class="w-full h-72"><canvas id="mixedChart"></canvas></div>
                 </div>
 
-                <div class="glass-card flex flex-col overflow-hidden">
-                    <div class="px-6 py-5 border-b border-slate-100">
-                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="file-clock" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Secundaria</h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-slate-50 text-slate-500 font-semibold text-xs border-b border-slate-200">
-                                <tr><th class="py-3 px-6">Segmento Regulado</th><th class="py-3 px-6 text-center">Clientes</th><th class="py-3 px-6 text-right">Monto Neto</th></tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr onclick="drillDown('propiedad', 'señado')" class="hover:bg-amber-50/50 cursor-pointer transition-colors">
-                                    <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-amber-500"></div> Señados</td>
-                                    <td id="td-senado-cant" class="py-4 px-6 text-center font-semibold">0</td>
-                                    <td id="td-senado-monto" class="py-4 px-6 text-right text-slate-600">0</td>
-                                </tr>
-                                <tr onclick="drillDown('propiedad', 'sin pago')" class="hover:bg-rose-50/50 bg-rose-50/30 cursor-pointer transition-colors">
-                                    <td class="py-4 px-6 flex items-center gap-3 font-bold text-rose-600"><div class="w-2.5 h-2.5 rounded-full bg-rose-500"></div> Sin Pago Alguno</td>
-                                    <td id="td-sinpago-cant" class="py-4 px-6 text-center font-bold text-rose-600">0</td>
-                                    <td id="td-sinpago-monto" class="py-4 px-6 text-right font-bold text-rose-600">0</td>
-                                </tr>
-                                <tr class="bg-slate-800 text-white">
-                                    <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Secundaria</td>
-                                    <td id="td-total-secundaria-cant" class="py-4 px-6 text-center font-bold text-lg">0</td>
-                                    <td id="td-total-secundaria-monto" class="py-4 px-6 text-right font-bold text-lg text-rose-400">0</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
             </section>
-
+            
             <section id="tab-gestiones" class="tab-content space-y-4"><div id="tabla-gestiones"></div></section>
             <section id="tab-propiedad" class="tab-content space-y-4"><div id="tabla-propiedad"></div></section>
             <section id="tab-habilitacion" class="tab-content space-y-4"><div id="tabla-habilitacion"></div></section>
