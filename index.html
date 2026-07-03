@@ -58,7 +58,7 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V19";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V23_ESTETICA";
         let rawDataCache = null; 
 
         // --- 1. UTILIDADES Y PARSEADORES ---
@@ -103,7 +103,6 @@
             return text;
         }
 
-        // ¡RESTAURADAS LAS FUNCIONES QUE FALTABAN!
         function findRowByLabel(matrix, keyword) {
             if (!matrix || !Array.isArray(matrix)) return null;
             const normKeyword = normalizeText(keyword);
@@ -113,6 +112,13 @@
         function extractNumbersFromRow(row) {
             if (!row) return [];
             return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
+        }
+
+        function extractMonthlyData(row) {
+            let data = [];
+            if(!row) return Array(12).fill(0);
+            for(let i=1; i<=12; i++) data.push(cleanAndParseNumber(row[i]));
+            return data;
         }
 
         function extractSmartMonthlyData(resumenMatrix, keyword) {
@@ -271,41 +277,67 @@
             if(criticalNotificationHtml !== '') { centerNotification.innerHTML = criticalNotificationHtml; centerNotification.classList.remove('hidden'); } else { centerNotification.classList.add('hidden'); }
         }
 
-        function renderGestiones2026(rawMatrix, containerId) {
+        // GENERADOR DE TABLA ESTÉTICA PARA "GESTIÓN DE ARMAS"
+        function renderGestionArmas(matrix, containerId) {
             const container = document.getElementById(containerId);
-            if (!rawMatrix || rawMatrix.length === 0) { container.innerHTML = `<p class="text-slate-500">Sin datos.</p>`; return; }
-            const mesesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            const mesesDisplay = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            let html = ''; let currentBlockTitle = ''; let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11]; 
-            
-            rawMatrix.forEach(row => {
-                const filledCells = row.filter(c => String(c).trim() !== "");
-                if (filledCells.length === 0) return;
-                const rowStr = normalizeText(row.join(' '));
-                if (rowStr.includes('enero') && rowStr.includes('febrero')) {
-                    monthIndices = mesesNombres.map(mes => row.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes)));
-                    let firstFound = monthIndices.find(idx => idx !== -1);
-                    if (firstFound !== undefined) { for(let i=0; i<12; i++) { if(monthIndices[i] === -1) monthIndices[i] = firstFound + i; } }
-                    return; 
-                }
-                if (filledCells.length === 1 && isNaN(parseFloat(filledCells[0]))) { currentBlockTitle = String(filledCells[0]).toUpperCase(); return; }
+            if (!matrix || matrix.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium">No se detectaron datos en la hoja "GESTIONES".</div>`;
+                return;
+            }
 
-                if (currentBlockTitle !== '' && filledCells.some(c => !isNaN(parseFloat(c)))) {
-                    html += `<div class="gestiones-block"><div class="gestiones-header">${currentBlockTitle}</div><div class="overflow-x-auto"><table class="gestiones-table"><thead><tr>`;
-                    mesesDisplay.forEach(m => html += `<th>${m}</th>`);
-                    html += `</tr></thead><tbody><tr>`;
-                    for (let i = 0; i < 12; i++) {
-                        let colIdx = monthIndices[i]; let val = (colIdx !== -1 && row[colIdx] !== undefined) ? String(row[colIdx]).trim() : '';
-                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) { html += `<td><span class="text-slate-300 font-normal">-</span></td>`; } 
-                        else { let num = parseFloat(val); if (!isNaN(num) && num !== 0) html += `<td class="font-bold text-slate-800">${num}</td>`; else html += `<td><span class="text-slate-300 font-normal">0</span></td>`; }
-                    }
-                    html += `</tr></tbody></table></div></div>`;
-                    currentBlockTitle = ''; 
-                }
+            let html = `
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-semibold text-xs border-b border-slate-200">
+                        <tr>
+                            <th class="py-3 px-6 uppercase">Mes / Período</th>
+                            <th class="py-3 px-6 text-center uppercase text-emerald-600"><i data-lucide="package-check" class="w-4 h-4 inline mr-1"></i> Entregas</th>
+                            <th class="py-3 px-6 text-center uppercase text-blue-600"><i data-lucide="shopping-bag" class="w-4 h-4 inline mr-1"></i> Ventas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+            `;
+
+            let totalEntregas = 0;
+            let totalVentas = 0;
+            let hasData = false;
+
+            matrix.forEach((row, idx) => {
+                const mesStr = String(row[0] || '').trim();
+                if (idx === 0 || mesStr === '' || mesStr.toUpperCase().includes('GESTIÓN') || mesStr.toUpperCase().includes('TOTAL')) return;
+
+                let entregas = parseInt(row[1]) || 0;
+                let ventas = parseInt(row[2]) || 0;
+
+                totalEntregas += entregas;
+                totalVentas += ventas;
+                hasData = true;
+
+                html += `
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3 px-6 font-semibold text-slate-700 capitalize">${mesStr}</td>
+                        <td class="py-3 px-6 text-center"><span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold text-xs">${entregas}</span></td>
+                        <td class="py-3 px-6 text-center"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-bold text-xs">${ventas}</span></td>
+                    </tr>
+                `;
             });
-            container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
+
+            if (!hasData) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium">No hay registros mensuales válidos.</div>`;
+                return;
+            }
+
+            html += `
+                    <tr class="bg-slate-800 text-white">
+                        <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Acumulado</td>
+                        <td class="py-4 px-6 text-center font-bold text-lg text-emerald-400">${totalEntregas}</td>
+                        <td class="py-4 px-6 text-center font-bold text-lg text-blue-400">${totalVentas}</td>
+                    </tr>
+                </tbody></table>
+            `;
+            container.innerHTML = html;
         }
 
+        // GENERADOR DE BASES DE DATOS CON "DATA-ESTADO"
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
@@ -687,15 +719,15 @@
                 }
             }
 
-            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS
+            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS (A prueba de balas)
             setSafeText('kpi-mas-30', demorasActivas30); 
             setSafeText('kpi-cartera-total', totalActivos);
-            setSafeText('kpi-menos-30', alDiaPropios);
+            setSafeText('kpi-menos-30', alDiaPropios); 
             setSafeText('val-cartera-monto', formatGuaranies(capitalPendienteTotal));
             
             setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
             setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
-            setSafeText('td-total-cant', propiaCant + campingCant); setSafeText('td-total-monto', formatGuaranies(propiaMonto + campingMonto));
+            setSafeText('td-total-cant', totalActivos); setSafeText('td-total-monto', formatGuaranies(capitalPendienteTotal));
 
             updateDonutChart(propiaCant, campingCant);
             
@@ -703,6 +735,9 @@
             const rEmisionRP = extractSmartMonthlyData(resumen, "emision de rp");
             const rDemorasGrafico = extractSmartMonthlyData(resumen, "demoraron mas de 30"); 
             updateMixedChart(rTotalCH, rEmisionRP, rDemorasGrafico);
+
+            // NUEVA TABLA: GESTIÓN DE ARMAS
+            renderGestionArmas(data["GESTIONES"] || [], "tabla-gestion-armas");
 
             renderGestiones2026(data["GESTIONES 2026"] || [], "tabla-gestiones");
             renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
@@ -795,8 +830,8 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
-                                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">GESTIÓN PROPIA Y C44 (> 30 DÍAS) <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
-                                    <span class="info-tooltip">Cálculo exacto desde la base de datos (Excluye Retirados y Notas de Crédito). Clic para filtrar la lista.</span>
+                                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">CLIENTES CON MÁS DE 30 DÍAS <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <span class="info-tooltip">Cálculo exacto desde la base de datos para Propia y Camping (Excluye Retirados). Clic para filtrar la lista.</span>
                                 </div>
                                 <h3 id="kpi-mas-30" class="text-4xl font-bold text-slate-800">0</h3>
                             </div>
@@ -821,7 +856,7 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <div class="tooltip-container">
-                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">CLIENTES < 30 DÍAS <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
+                                    <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1 cursor-help">CLIENTES CON MENOS DE 30 DÍAS <i data-lucide="info" class="w-3 h-3 text-slate-400"></i></p>
                                     <span class="info-tooltip">Cuántos clientes cuentan con menos de 30 días en Gestión Propia y Gestión Camping exclusivamente.</span>
                                 </div>
                                 <h3 id="kpi-menos-30" class="text-4xl font-bold text-slate-800">0</h3>
@@ -850,37 +885,49 @@
                 </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 glass-card flex flex-col overflow-hidden">
-                        <div class="px-6 py-5 border-b border-slate-100">
-                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Principal</h3>
+                    <div class="lg:col-span-2 flex flex-col gap-6">
+                        
+                        <div class="glass-card flex flex-col overflow-hidden">
+                            <div class="px-6 py-5 border-b border-slate-100">
+                                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Principal</h3>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-slate-50 text-slate-500 font-semibold text-xs border-b border-slate-200">
+                                        <tr><th class="py-3 px-6">Segmento Regulado</th><th class="py-3 px-6 text-center">Clientes</th><th class="py-3 px-6 text-right">Monto Neto</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <tr onclick="drillDown('propiedad', 'propia')" class="hover:bg-blue-50/50 cursor-pointer transition-colors">
+                                            <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Gestión Propia</td>
+                                            <td id="td-propia-cant" class="py-4 px-6 text-center font-semibold">0</td>
+                                            <td id="td-propia-monto" class="py-4 px-6 text-right text-slate-600">0</td>
+                                        </tr>
+                                        <tr onclick="drillDown('propiedad', 'camping')" class="hover:bg-purple-50/50 cursor-pointer transition-colors">
+                                            <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-purple-500"></div> Gestión de Camping</td>
+                                            <td id="td-camping-cant" class="py-4 px-6 text-center font-semibold">0</td>
+                                            <td id="td-camping-monto" class="py-4 px-6 text-right text-slate-600">0</td>
+                                        </tr>
+                                        <tr class="bg-slate-800 text-white">
+                                            <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Propia y Camping</td>
+                                            <td id="td-total-cant" class="py-4 px-6 text-center font-bold text-lg">0</td>
+                                            <td id="td-total-monto" class="py-4 px-6 text-right font-bold text-lg text-emerald-400">0</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left">
-                                <thead class="bg-slate-50 text-slate-500 font-semibold text-xs border-b border-slate-200">
-                                    <tr><th class="py-3 px-6">Segmento Regulado</th><th class="py-3 px-6 text-center">Clientes</th><th class="py-3 px-6 text-right">Monto Neto</th></tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <tr onclick="drillDown('propiedad', 'propia')" class="hover:bg-blue-50/50 cursor-pointer transition-colors">
-                                        <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-blue-500"></div> Gestión Propia</td>
-                                        <td id="td-propia-cant" class="py-4 px-6 text-center font-semibold">0</td>
-                                        <td id="td-propia-monto" class="py-4 px-6 text-right text-slate-600">0</td>
-                                    </tr>
-                                    <tr onclick="drillDown('propiedad', 'camping')" class="hover:bg-purple-50/50 cursor-pointer transition-colors">
-                                        <td class="py-4 px-6 flex items-center gap-3 font-medium text-slate-700"><div class="w-2.5 h-2.5 rounded-full bg-purple-500"></div> Gestión de Camping</td>
-                                        <td id="td-camping-cant" class="py-4 px-6 text-center font-semibold">0</td>
-                                        <td id="td-camping-monto" class="py-4 px-6 text-right text-slate-600">0</td>
-                                    </tr>
-                                    <tr class="bg-slate-800 text-white">
-                                        <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Propia y Camping</td>
-                                        <td id="td-total-cant" class="py-4 px-6 text-center font-bold text-lg">0</td>
-                                        <td id="td-total-monto" class="py-4 px-6 text-right font-bold text-lg text-emerald-400">0</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                        <div class="glass-card flex flex-col overflow-hidden">
+                            <div class="px-6 py-5 border-b border-slate-100">
+                                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="crosshair" class="w-5 h-5 text-slate-400"></i> Control Operativo: Gestión de Armas</h3>
+                            </div>
+                            <div class="overflow-x-auto" id="tabla-gestion-armas">
+                                </div>
                         </div>
+
                     </div>
-                    <div class="glass-card p-6 flex flex-col justify-center items-center">
-                        <div class="w-full max-w-[200px] cursor-pointer" title="Filtra tocando los colores"><canvas id="donutChart"></canvas></div>
+                    <div class="glass-card p-6 flex flex-col justify-center items-center h-full min-h-[300px]">
+                        <div class="w-full max-w-[220px] cursor-pointer" title="Filtra tocando los colores"><canvas id="donutChart"></canvas></div>
                     </div>
                 </div>
             </section>
