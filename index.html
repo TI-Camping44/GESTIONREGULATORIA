@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -58,10 +58,10 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V24_MASTER";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V25_FIX";
         let rawDataCache = null; 
 
-        // --- 1. UTILIDADES Y PARSEADORES ---
+        // --- 1. UTILIDADES Y PARSEADORES (RESTAURADOS AL 100%) ---
         function normalizeText(text) {
             if (!text) return "";
             return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -101,6 +101,18 @@
             if (t === 'OK' || t === 'RENOVADO' || t === 'RETIRADO DEFINITIVO' || t.includes('NOTA DE CREDITO')) return `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             if (t === 'FALTA' || t === 'PENDIENTE') return `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             return text;
+        }
+
+        // ¡HERRAMIENTAS VITALES RESTAURADAS!
+        function findRowByLabel(matrix, keyword) {
+            if (!matrix || !Array.isArray(matrix)) return null;
+            const normKeyword = normalizeText(keyword);
+            return matrix.find(row => row && Array.isArray(row) && row.some(cell => normalizeText(cell).includes(normKeyword)));
+        }
+
+        function extractNumbersFromRow(row) {
+            if (!row) return [];
+            return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
         }
 
         function extractSmartMonthlyData(resumenMatrix, keyword) {
@@ -259,7 +271,6 @@
             if(criticalNotificationHtml !== '') { centerNotification.innerHTML = criticalNotificationHtml; centerNotification.classList.remove('hidden'); } else { centerNotification.classList.add('hidden'); }
         }
 
-        // --- LA NUEVA TABLA DE GESTIÓN DE ARMAS ---
         function renderGestionArmas(matrix, containerId) {
             const container = document.getElementById(containerId);
             if (!matrix || matrix.length === 0) {
@@ -284,10 +295,9 @@
             let hasData = false;
 
             matrix.forEach((row, idx) => {
-                if (idx === 0) return; // Saltar cabecera
+                if (idx === 0) return; 
                 const mesStr = String(row[0] || '').trim();
                 
-                // Evitar procesar filas en blanco o la fila final de sumatoria si la tiene
                 if (mesStr === '' || mesStr.toUpperCase().includes('TOTAL')) return;
 
                 let entregas = parseInt(row[1]) || 0;
@@ -357,6 +367,7 @@
             container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
         }
 
+        // RENDERIZADO DE TABLA (DATA-ATRIBUTOS EN INYECTADOS)
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
@@ -579,9 +590,9 @@
                 }
 
                 if (specialFilter === 'mora_activos') {
-                    if (!isPropiaOrCamping || moraDias <= 30) passSpecial = false;
+                    if (!isPropiaOrCamping || moraDias > 30 === false) passSpecial = false;
                 } else if (specialFilter === 'al_dia_propios') {
-                    if (!isPropiaOrCamping || moraDias > 30) passSpecial = false;
+                    if (!isPropiaOrCamping || moraDias <= 30 === false) passSpecial = false;
                 } else if (specialFilter === 'activos') {
                     if (!isActivoTotal) passSpecial = false;
                 }
