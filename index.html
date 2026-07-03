@@ -58,7 +58,7 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V23_ESTETICA";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V24_MASTER";
         let rawDataCache = null; 
 
         // --- 1. UTILIDADES Y PARSEADORES ---
@@ -101,24 +101,6 @@
             if (t === 'OK' || t === 'RENOVADO' || t === 'RETIRADO DEFINITIVO' || t.includes('NOTA DE CREDITO')) return `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             if (t === 'FALTA' || t === 'PENDIENTE') return `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             return text;
-        }
-
-        function findRowByLabel(matrix, keyword) {
-            if (!matrix || !Array.isArray(matrix)) return null;
-            const normKeyword = normalizeText(keyword);
-            return matrix.find(row => row && Array.isArray(row) && row.some(cell => normalizeText(cell).includes(normKeyword)));
-        }
-
-        function extractNumbersFromRow(row) {
-            if (!row) return [];
-            return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
-        }
-
-        function extractMonthlyData(row) {
-            let data = [];
-            if(!row) return Array(12).fill(0);
-            for(let i=1; i<=12; i++) data.push(cleanAndParseNumber(row[i]));
-            return data;
         }
 
         function extractSmartMonthlyData(resumenMatrix, keyword) {
@@ -277,7 +259,7 @@
             if(criticalNotificationHtml !== '') { centerNotification.innerHTML = criticalNotificationHtml; centerNotification.classList.remove('hidden'); } else { centerNotification.classList.add('hidden'); }
         }
 
-        // GENERADOR DE TABLA ESTÉTICA PARA "GESTIÓN DE ARMAS"
+        // --- LA NUEVA TABLA DE GESTIÓN DE ARMAS ---
         function renderGestionArmas(matrix, containerId) {
             const container = document.getElementById(containerId);
             if (!matrix || matrix.length === 0) {
@@ -302,8 +284,11 @@
             let hasData = false;
 
             matrix.forEach((row, idx) => {
+                if (idx === 0) return; // Saltar cabecera
                 const mesStr = String(row[0] || '').trim();
-                if (idx === 0 || mesStr === '' || mesStr.toUpperCase().includes('GESTIÓN') || mesStr.toUpperCase().includes('TOTAL')) return;
+                
+                // Evitar procesar filas en blanco o la fila final de sumatoria si la tiene
+                if (mesStr === '' || mesStr.toUpperCase().includes('TOTAL')) return;
 
                 let entregas = parseInt(row[1]) || 0;
                 let ventas = parseInt(row[2]) || 0;
@@ -337,7 +322,41 @@
             container.innerHTML = html;
         }
 
-        // GENERADOR DE BASES DE DATOS CON "DATA-ESTADO"
+        function renderGestiones2026(rawMatrix, containerId) {
+            const container = document.getElementById(containerId);
+            if (!rawMatrix || rawMatrix.length === 0) { container.innerHTML = `<p class="text-slate-500">Sin datos.</p>`; return; }
+            const mesesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            const mesesDisplay = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+            let html = ''; let currentBlockTitle = ''; let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11]; 
+            
+            rawMatrix.forEach(row => {
+                const filledCells = row.filter(c => String(c).trim() !== "");
+                if (filledCells.length === 0) return;
+                const rowStr = normalizeText(row.join(' '));
+                if (rowStr.includes('enero') && rowStr.includes('febrero')) {
+                    monthIndices = mesesNombres.map(mes => row.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes)));
+                    let firstFound = monthIndices.find(idx => idx !== -1);
+                    if (firstFound !== undefined) { for(let i=0; i<12; i++) { if(monthIndices[i] === -1) monthIndices[i] = firstFound + i; } }
+                    return; 
+                }
+                if (filledCells.length === 1 && isNaN(parseFloat(filledCells[0]))) { currentBlockTitle = String(filledCells[0]).toUpperCase(); return; }
+
+                if (currentBlockTitle !== '' && filledCells.some(c => !isNaN(parseFloat(c)))) {
+                    html += `<div class="gestiones-block"><div class="gestiones-header">${currentBlockTitle}</div><div class="overflow-x-auto"><table class="gestiones-table"><thead><tr>`;
+                    mesesDisplay.forEach(m => html += `<th>${m}</th>`);
+                    html += `</tr></thead><tbody><tr>`;
+                    for (let i = 0; i < 12; i++) {
+                        let colIdx = monthIndices[i]; let val = (colIdx !== -1 && row[colIdx] !== undefined) ? String(row[colIdx]).trim() : '';
+                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) { html += `<td><span class="text-slate-300 font-normal">-</span></td>`; } 
+                        else { let num = parseFloat(val); if (!isNaN(num) && num !== 0) html += `<td class="font-bold text-slate-800">${num}</td>`; else html += `<td><span class="text-slate-300 font-normal">0</span></td>`; }
+                    }
+                    html += `</tr></tbody></table></div></div>`;
+                    currentBlockTitle = ''; 
+                }
+            });
+            container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
+        }
+
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
@@ -545,7 +564,7 @@
             rows.forEach(row => {
                 const cells = Array.from(row.querySelectorAll('td'));
                 
-                // LECTURA DEL CANDADO DE DATOS (EL CEREBRO DEL FILTRO)
+                // LECTURA DEL CANDADO DE DATOS
                 let passSpecial = true;
                 const estado = row.getAttribute('data-estado') || "";
                 const moraDias = parseFloat(row.getAttribute('data-mora')) || 0;
@@ -727,7 +746,7 @@
             
             setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
             setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
-            setSafeText('td-total-cant', totalActivos); setSafeText('td-total-monto', formatGuaranies(capitalPendienteTotal));
+            setSafeText('td-total-cant', propiaCant + campingCant); setSafeText('td-total-monto', formatGuaranies(propiaMonto + campingMonto));
 
             updateDonutChart(propiaCant, campingCant);
             
