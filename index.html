@@ -58,10 +58,10 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V26_FECHAS";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V25_RESTAURADA";
         let rawDataCache = null; 
 
-        // --- 1. UTILIDADES Y PARSEADORES ---
+        // --- 1. UTILIDADES Y PARSEADORES (RESTAURADOS AL 100%) ---
         function normalizeText(text) {
             if (!text) return "";
             return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -101,6 +101,18 @@
             if (t === 'OK' || t === 'RENOVADO' || t === 'RETIRADO DEFINITIVO' || t.includes('NOTA DE CREDITO')) return `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             if (t === 'FALTA' || t === 'PENDIENTE') return `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             return text;
+        }
+
+        // --- LAS FUNCIONES QUE ME HABÍA OLVIDADO (PERDÓN) ---
+        function findRowByLabel(matrix, keyword) {
+            if (!matrix || !Array.isArray(matrix)) return null;
+            const normKeyword = normalizeText(keyword);
+            return matrix.find(row => row && Array.isArray(row) && row.some(cell => normalizeText(cell).includes(normKeyword)));
+        }
+
+        function extractNumbersFromRow(row) {
+            if (!row) return [];
+            return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
         }
 
         function extractSmartMonthlyData(resumenMatrix, keyword) {
@@ -287,12 +299,11 @@
                 if (idx === 0) return; 
                 let mesStr = String(row[0] || '').trim();
                 
-                // --- TRADUCTOR DE FECHAS ROBOT A HUMANO ---
+                // Traductor de fechas robot a humano
                 if(mesStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
                     const d = new Date(mesStr);
                     mesStr = d.toLocaleDateString('es-ES', { timeZone: 'UTC', month: 'long', year: 'numeric' });
                 }
-                // ------------------------------------------
 
                 if (mesStr === '' || mesStr.toUpperCase().includes('TOTAL')) return;
 
@@ -363,7 +374,7 @@
             container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
         }
 
-        // RENDERIZADO DE TABLA (DATA-ATRIBUTOS EN INYECTADOS)
+        // RENDERIZADO DE TABLA 
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
@@ -745,7 +756,7 @@
                 }
             }
 
-            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS
+            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS (A prueba de balas)
             setSafeText('kpi-mas-30', demorasActivas30); 
             setSafeText('kpi-cartera-total', totalActivos);
             setSafeText('kpi-menos-30', alDiaPropios); 
