@@ -58,10 +58,10 @@
 
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V25_FIX";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V26_FECHAS";
         let rawDataCache = null; 
 
-        // --- 1. UTILIDADES Y PARSEADORES (RESTAURADOS AL 100%) ---
+        // --- 1. UTILIDADES Y PARSEADORES ---
         function normalizeText(text) {
             if (!text) return "";
             return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -101,18 +101,6 @@
             if (t === 'OK' || t === 'RENOVADO' || t === 'RETIRADO DEFINITIVO' || t.includes('NOTA DE CREDITO')) return `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             if (t === 'FALTA' || t === 'PENDIENTE') return `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             return text;
-        }
-
-        // ¡HERRAMIENTAS VITALES RESTAURADAS!
-        function findRowByLabel(matrix, keyword) {
-            if (!matrix || !Array.isArray(matrix)) return null;
-            const normKeyword = normalizeText(keyword);
-            return matrix.find(row => row && Array.isArray(row) && row.some(cell => normalizeText(cell).includes(normKeyword)));
-        }
-
-        function extractNumbersFromRow(row) {
-            if (!row) return [];
-            return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
         }
 
         function extractSmartMonthlyData(resumenMatrix, keyword) {
@@ -271,6 +259,7 @@
             if(criticalNotificationHtml !== '') { centerNotification.innerHTML = criticalNotificationHtml; centerNotification.classList.remove('hidden'); } else { centerNotification.classList.add('hidden'); }
         }
 
+        // --- LA TABLA DE GESTIÓN DE ARMAS CON FIX DE FECHAS ---
         function renderGestionArmas(matrix, containerId) {
             const container = document.getElementById(containerId);
             if (!matrix || matrix.length === 0) {
@@ -296,8 +285,15 @@
 
             matrix.forEach((row, idx) => {
                 if (idx === 0) return; 
-                const mesStr = String(row[0] || '').trim();
+                let mesStr = String(row[0] || '').trim();
                 
+                // --- TRADUCTOR DE FECHAS ROBOT A HUMANO ---
+                if(mesStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
+                    const d = new Date(mesStr);
+                    mesStr = d.toLocaleDateString('es-ES', { timeZone: 'UTC', month: 'long', year: 'numeric' });
+                }
+                // ------------------------------------------
+
                 if (mesStr === '' || mesStr.toUpperCase().includes('TOTAL')) return;
 
                 let entregas = parseInt(row[1]) || 0;
@@ -749,7 +745,7 @@
                 }
             }
 
-            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS (A prueba de balas)
+            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS
             setSafeText('kpi-mas-30', demorasActivas30); 
             setSafeText('kpi-cartera-total', totalActivos);
             setSafeText('kpi-menos-30', alDiaPropios); 
