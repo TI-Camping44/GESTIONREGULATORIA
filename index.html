@@ -14,14 +14,14 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
+
         .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease; }
         .tab-content.active { display: block; opacity: 1; }
-        
+
         .glass-card { background: #ffffff; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; border-radius: 12px; }
         .clickable-card { cursor: pointer; transition: all 0.2s ease; border-width: 2px; }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
-        
+
         .modern-table-container { width: 100%; overflow-x: auto; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .modern-table { width: 100%; border-collapse: collapse; text-align: left; }
         .modern-table th { background-color: #f1f5f9; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 16px; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10; cursor: pointer; white-space: nowrap; }
@@ -29,19 +29,19 @@
         .modern-table td { padding: 12px 16px; font-size: 13px; color: #1e293b; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
         .modern-table tbody tr.searchable-row:nth-child(even) { background-color: #f8fafc; }
         .modern-table tbody tr.searchable-row:hover { background-color: #eff6ff; }
-        
+
         .gestiones-block { margin-bottom: 2rem; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .gestiones-header { background: #1e293b; color: #fff; padding: 12px 16px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
         .gestiones-table { width: 100%; border-collapse: collapse; }
         .gestiones-table th { background: #f8fafc; padding: 10px; font-size: 11px; color: #64748b; text-align: center; border-bottom: 1px solid #e2e8f0; font-weight: 600; }
         .gestiones-table td { padding: 12px 10px; font-size: 14px; text-align: center; font-weight: 600; border-bottom: 1px solid #f1f5f9; color: #334155; }
-        
+
         .filter-select { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #475569; outline: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
 
         .toast { position: fixed; bottom: 30px; right: 30px; background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); pointer-events: none; }
         .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-        
+
         .tooltip-container { position: relative; display: inline-block; }
         .info-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(10px); background-color: #1e293b; color: white; text-align: left; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; width: 220px; z-index: 50; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); pointer-events: none; line-height: 1.4; text-transform: none; letter-spacing: normal; }
         .info-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
@@ -59,12 +59,12 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
         const CACHE_KEY = "DIGEMABEL_CACHE_V29";
-        let rawDataCache = null; 
+        let rawDataCache = null;
 
         // --- UTILIDADES ---
         function normalizeText(text) {
             if (!text) return "";
-            return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+            return String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
         }
 
         function setSafeText(elementId, text) {
@@ -118,14 +118,14 @@
             let data = Array(12).fill(0);
             const rowIdx = resumenMatrix.findIndex(r => r && Array.isArray(r) && r.some(c => normalizeText(String(c)).includes(normalizeText(keyword))));
             if (rowIdx === -1) return data;
-            
+
             const targetRow = resumenMatrix[rowIdx];
             let headerRow = null;
             for (let i = rowIdx - 1; i >= 0; i--) {
                 const rStr = normalizeText(resumenMatrix[i].join(' '));
                 if (rStr.includes('enero') && rStr.includes('febrero')) { headerRow = resumenMatrix[i]; break; }
             }
-            
+
             if (headerRow) {
                 const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
                 meses.forEach((mes, idx) => {
@@ -143,11 +143,11 @@
             const tbody = table.querySelector('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr.searchable-row'));
             const colIndex = Array.from(thElement.parentNode.children).indexOf(thElement);
-            
+
             let isAsc = isAutoSort ? false : thElement.classList.contains('asc');
             table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
             thElement.classList.add(isAsc ? 'desc' : 'asc');
-            
+
             rows.sort((a, b) => {
                 const aCol = a.children[colIndex]; const bCol = b.children[colIndex];
                 if(!aCol || !bCol) return 0;
@@ -166,7 +166,7 @@
             let rows = matrix.filter(row => {
                 const isAllEmpty = row.every(c => String(c).trim() === '');
                 const isJustNumbers = row.every(c => !isNaN(c) || String(c).trim() === '');
-                return !isAllEmpty && (!isJustNumbers || row[0] !== ''); 
+                return !isAllEmpty && (!isJustNumbers || row[0] !== '');
             });
             if(rows.length === 0) return [];
 
@@ -200,10 +200,10 @@
             let csv = [];
             const rows = table.querySelectorAll('tr');
             for (let i = 0; i < rows.length; i++) {
-                if(rows[i].style.display === 'none') continue; 
+                if(rows[i].style.display === 'none') continue;
                 let row = [], cols = rows[i].querySelectorAll('td, th');
                 for (let j = 0; j < cols.length; j++) {
-                    let text = cols[j].textContent.replace(/"/g, '""'); 
+                    let text = cols[j].textContent.replace(/"/g, '""');
                     row.push('"' + text + '"');
                 }
                 csv.push(row.join(','));
@@ -222,7 +222,7 @@
         function renderGestionArmas(matrix, containerId) {
             const container = document.getElementById(containerId);
             if (!matrix || matrix.length === 0) {
-                container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium">No se detectaron datos en la hoja "GESTIONES".</div>`;
+                container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium">No se detectaron datos en la hoja "ENTREGAS - ARMAS".</div>`;
                 return;
             }
 
@@ -243,9 +243,9 @@
             let hasData = false;
 
             matrix.forEach((row, idx) => {
-                if (idx === 0) return; 
+                if (idx === 0) return;
                 let mesStr = String(row[0] || '').trim();
-                
+
                 if(mesStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
                     const d = new Date(mesStr);
                     mesStr = d.toLocaleDateString('es-ES', { timeZone: 'UTC', month: 'long', year: 'numeric' });
@@ -290,8 +290,8 @@
             if (!rawMatrix || rawMatrix.length === 0) { container.innerHTML = `<p class="text-slate-500">Sin datos.</p>`; return; }
             const mesesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
             const mesesDisplay = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            let html = ''; let currentBlockTitle = ''; let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11]; 
-            
+            let html = ''; let currentBlockTitle = ''; let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11];
+
             rawMatrix.forEach(row => {
                 const filledCells = row.filter(c => String(c).trim() !== "");
                 if (filledCells.length === 0) return;
@@ -300,7 +300,7 @@
                     monthIndices = mesesNombres.map(mes => row.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes)));
                     let firstFound = monthIndices.find(idx => idx !== -1);
                     if (firstFound !== undefined) { for(let i=0; i<12; i++) { if(monthIndices[i] === -1) monthIndices[i] = firstFound + i; } }
-                    return; 
+                    return;
                 }
                 if (filledCells.length === 1 && isNaN(parseFloat(filledCells[0]))) { currentBlockTitle = String(filledCells[0]).toUpperCase(); return; }
 
@@ -310,11 +310,11 @@
                     html += `</tr></thead><tbody><tr>`;
                     for (let i = 0; i < 12; i++) {
                         let colIdx = monthIndices[i]; let val = (colIdx !== -1 && row[colIdx] !== undefined) ? String(row[colIdx]).trim() : '';
-                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) { html += `<td><span class="text-slate-300 font-normal">-</span></td>`; } 
+                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) { html += `<td><span class="text-slate-300 font-normal">-</span></td>`; }
                         else { let num = parseFloat(val); if (!isNaN(num) && num !== 0) html += `<td class="font-bold text-slate-800">${num}</td>`; else html += `<td><span class="text-slate-300 font-normal">0</span></td>`; }
                     }
                     html += `</tr></tbody></table></div></div>`;
-                    currentBlockTitle = ''; 
+                    currentBlockTitle = '';
                 }
             });
             container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
@@ -325,7 +325,7 @@
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
             if (!matrix || matrix.length === 0) { container.innerHTML = `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>No hay registros.</p></div>`; return; }
-            
+
             let headers = matrix[0]; let dataRows = matrix.slice(1);
             let diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
             let estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
@@ -337,9 +337,9 @@
             }
 
             let tableHtml = `<div class='modern-table-container'><table class='modern-table' id='table-${tabName}'><thead><tr>`;
-            headers.forEach((h, cIdx) => { 
+            headers.forEach((h, cIdx) => {
                 let isHidden = (visibleCols && !visibleCols.includes(cIdx)) ? "display:none;" : "";
-                tableHtml += `<th style="${isHidden}" onclick="sortTable(this)">${String(h).trim()} <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>`; 
+                tableHtml += `<th style="${isHidden}" onclick="sortTable(this)">${String(h).trim()} <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>`;
             });
             tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
 
@@ -347,7 +347,7 @@
                 let clienteName = "";
                 let diasValue = diasColIdx !== -1 ? row[diasColIdx] : "N/A";
                 let numDias = parseFloat(String(diasValue).replace(/[.₲\s%]/g, '').replace(',', '.'));
-                
+
                 let estadoVal = estadoColIdx !== -1 ? normalizeText(String(row[estadoColIdx])) : "";
                 let estadoStrForCopy = estadoColIdx !== -1 ? String(row[estadoColIdx]).trim().toUpperCase() : "N/A";
 
@@ -356,18 +356,18 @@
                 row.forEach((cell, cIdx) => {
                     let rawStr = String(cell).trim(); let cellStr = formatBeautifulDate(rawStr); let alignClass = "text-left"; let innerHtml = cellStr;
 
-                    if (rawStr.includes("#VALUE!") || rawStr.includes("#DIV/0!")) { innerHtml = `<span class="text-slate-300">-</span>`; alignClass = "text-center"; } 
-                    else if (rawStr.includes("₲")) { alignClass = "text-right font-bold text-slate-700"; } 
-                    else if (isNaN(parseFloat(rawStr)) && rawStr !== '') { innerHtml = createBadge(cellStr); } 
+                    if (rawStr.includes("#VALUE!") || rawStr.includes("#DIV/0!")) { innerHtml = `<span class="text-slate-300">-</span>`; alignClass = "text-center"; }
+                    else if (rawStr.includes("₲")) { alignClass = "text-right font-bold text-slate-700"; }
+                    else if (isNaN(parseFloat(rawStr)) && rawStr !== '') { innerHtml = createBadge(cellStr); }
                     else if (!isNaN(parseFloat(rawStr)) && rawStr !== '') { alignClass = "text-center font-medium text-slate-700"; }
-                    if (cIdx === 0) alignClass = "text-left font-semibold text-slate-800"; 
+                    if (cIdx === 0) alignClass = "text-left font-semibold text-slate-800";
 
                     if (isNaN(parseFloat(rawStr)) && rawStr.length > 5 && clienteName === "") { clienteName = rawStr.replace(/"/g, '').replace(/'/g, ''); }
 
                     if (innerHtml === cellStr && isNaN(parseFloat(rawStr)) && rawStr.length > 5 && !tableHtml.includes(`onclick="copyToClipboard`)) {
                         innerHtml = `<div class="flex items-center justify-between gap-3 group/btn"><span class="truncate max-w-xs block" title="${cellStr}">${cellStr}</span><button onclick="copyToClipboard('${clienteName}', '${diasValue}', '${estadoStrForCopy}', '${tabName}')" class="text-slate-400 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 p-1.5 rounded-md opacity-0 group-hover/btn:opacity-100 transition-all flex-shrink-0" title="Copiar Datos para Reclamo"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button></div>`;
                     }
-                    
+
                     let isHidden = (visibleCols && !visibleCols.includes(cIdx)) ? "display:none;" : "";
                     tableHtml += `<td class="${alignClass}" style="${isHidden}" data-raw="${normalizeText(rawStr)}">${innerHtml}</td>`;
                 });
@@ -382,7 +382,7 @@
                         <i data-lucide="filter" class="w-4 h-4 text-blue-500 cursor-help"></i>
                         <span class="info-tooltip">Filtros Automáticos detectados de tu Excel</span>
                     </div>`;
-            
+
             headers.forEach((h, colIndex) => {
                 const title = String(h).toUpperCase();
                 if (title.includes('DÍA') || title.includes('DIA') || title.includes('ESPERA')) {
@@ -398,7 +398,7 @@
                     let uniqueValues = new Set();
                     dataRows.forEach(r => { let val = String(r[colIndex] || '').trim(); if(val !== '' && !val.includes('#')) uniqueValues.add(val); });
                     let options = Array.from(uniqueValues).sort();
-                    if(options.length > 0 && options.length < 50) { 
+                    if(options.length > 0 && options.length < 50) {
                         filtersHtml += `
                         <select class="filter-select" data-col="${colIndex}" data-type="exact" onchange="applyAllFilters('${tabName}')">
                             <option value="">Filtrar: ${title}</option>
@@ -416,7 +416,7 @@
                     <span id="badge-text-${tabName}">Filtro Activo</span> <button onclick="clearSpecialFilter('${tabName}')" class="hover:text-indigo-900"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
                 </div>
-                
+
                 <div class="flex items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 flex-shrink-0">
                     <div class="flex items-center gap-1.5"><i data-lucide="list" class="w-3.5 h-3.5 text-blue-500"></i> Registros: <span id="count-${tabName}" class="text-slate-800 text-sm">${dataRows.length}</span></div>
                     <div class="w-px h-4 bg-slate-300 hidden md:block" id="sum-div-${tabName}"></div>
@@ -451,7 +451,7 @@
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => { el.classList.remove('bg-blue-600', 'text-white', 'shadow-md'); el.classList.add('text-slate-500', 'hover:bg-slate-50'); });
-            
+
             const activeTab = document.getElementById('tab-' + tabId);
             if(activeTab) activeTab.classList.add('active');
             const activeBtn = document.getElementById('btn-' + tabId);
@@ -459,7 +459,7 @@
 
             const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'gestiones': 'Control Operativo: Gestión Propia y Camping', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
             setSafeText('main-title', titulos[tabId] || 'DIGEMABEL');
-            
+
             document.getElementById('globalSearch').value = '';
             const table = document.getElementById(`table-${tabId}`);
             if(table) table.dataset.specialFilter = '';
@@ -476,15 +476,15 @@
             const table = document.getElementById(`table-${tabId}`);
             const badge = document.getElementById(`badge-activos-${tabId}`);
             const badgeText = document.getElementById(`badge-text-${tabId}`);
-            
+
             document.querySelectorAll('.filter-select').forEach(s => s.value = '');
-            
+
             if (filterMode === 'mora_activos') {
-                searchInput.value = ''; 
+                searchInput.value = '';
                 if(table) table.dataset.specialFilter = 'mora_activos';
                 if(badge) { badgeText.innerText = "Filtro: Propios y Camping > 30 Días"; badge.classList.remove('hidden'); }
             } else if (filterMode === 'al_dia_propios') {
-                searchInput.value = ''; 
+                searchInput.value = '';
                 if(table) table.dataset.specialFilter = 'al_dia_propios';
                 if(badge) { badgeText.innerText = "Filtro: Propios y Camping ≤ 30 Días"; badge.classList.remove('hidden'); }
             } else if (filterMode === 'activos') {
@@ -492,11 +492,11 @@
                 if(table) table.dataset.specialFilter = 'activos';
                 if(badge) { badgeText.innerText = "Filtro: Toda la Cartera Activa"; badge.classList.remove('hidden'); }
             } else {
-                searchInput.value = filterMode; 
+                searchInput.value = filterMode;
                 if(table) table.dataset.specialFilter = '';
                 if(badge) badge.classList.add('hidden');
             }
-            
+
             applyAllFilters(tabId);
             searchInput.focus(); searchInput.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
             setTimeout(() => searchInput.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-50'), 800);
@@ -538,7 +538,7 @@
 
             rows.forEach(row => {
                 const cells = Array.from(row.querySelectorAll('td'));
-                
+
                 // LECTURA DEL CANDADO DE DATOS
                 let passSpecial = true;
                 const estado = row.getAttribute('data-estado') || "";
@@ -577,15 +577,15 @@
 
                 const rowText = normalizeText(row.textContent);
                 let passText = searchTerms.every(term => rowText.includes(term));
-                
+
                 let passNum = true;
                 if (threshold !== null) {
                     passNum = cells.some(cell => {
                         const val = parseFloat(cell.textContent.replace(/[.₲\s%]/g, '').replace(',', '.'));
-                        return !isNaN(val) && val >= threshold && val < 5000; 
+                        return !isNaN(val) && val >= threshold && val < 5000;
                     });
                 }
-                
+
                 if (passSpecial && passDropdowns && passText && passNum) {
                     row.style.display = ''; visibleCount++;
                     cells.forEach(c => {
@@ -614,33 +614,33 @@
             const errorMsg = document.getElementById('error-msg');
             const retryBtn = document.getElementById('btn-retry');
             const syncIndicators = document.querySelectorAll('.sync-indicator');
-            
+
             if (!forceRefresh) {
                 const cachedData = sessionStorage.getItem(CACHE_KEY);
                 if (cachedData) {
-                    try { rawDataCache = JSON.parse(cachedData); renderData(rawDataCache); loader.style.display = 'none'; return; } 
+                    try { rawDataCache = JSON.parse(cachedData); renderData(rawDataCache); loader.style.display = 'none'; return; }
                     catch(e) { console.warn("Cache inválido."); }
                 }
             }
 
             try {
-                if(!isSilent) { loader.style.display = 'flex'; errorMsg.innerHTML = ''; retryBtn.classList.add('hidden'); } 
+                if(!isSilent) { loader.style.display = 'flex'; errorMsg.innerHTML = ''; retryBtn.classList.add('hidden'); }
                 else { syncIndicators.forEach(el => el.classList.remove('hidden')); }
 
                 const response = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
                 if (!response.ok) throw new Error(`HTTP Error`);
                 const rawText = await response.text();
-                
+
                 try { rawDataCache = JSON.parse(rawText); } catch(e) { throw new Error("Bloqueo temporal de Google por seguridad."); }
                 try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(rawDataCache)); } catch(e) { console.warn("Memoria local llena."); }
 
                 renderData(rawDataCache);
 
-                if(!isSilent) { loader.classList.add('opacity-0'); setTimeout(() => loader.style.display = 'none', 300); } 
+                if(!isSilent) { loader.classList.add('opacity-0'); setTimeout(() => loader.style.display = 'none', 300); }
                 else { syncIndicators.forEach(el => el.classList.add('hidden')); }
                 setTimeout(() => { if(typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
             } catch (error) {
-                if(!isSilent) { errorMsg.innerHTML = `⚠️ ${error.message}`; retryBtn.classList.remove('hidden'); } 
+                if(!isSilent) { errorMsg.innerHTML = `⚠️ ${error.message}`; retryBtn.classList.remove('hidden'); }
                 else { syncIndicators.forEach(el => el.classList.add('hidden')); }
             }
         }
@@ -649,7 +649,7 @@
             sessionStorage.removeItem(CACHE_KEY); document.getElementById('loader').classList.remove('opacity-0'); fetchLiveSheetsData(true);
         }
 
-        setInterval(() => { fetchLiveSheetsData(true, true); }, 300000); 
+        setInterval(() => { fetchLiveSheetsData(true, true); }, 300000);
 
         function renderData(data) {
             const resumen = data["RESUMEN"];
@@ -664,33 +664,33 @@
             let demorasActivas30 = 0;
             let alDiaPropios = 0;
             let capitalPendienteTotal = 0;
-            
+
             const propDb = purifyMatrix(data["REGISTRO DE PROPIEDAD"] || []);
             if (propDb.length > 0) {
                 const headers = propDb[0];
                 const diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
                 const estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
                 const precioColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t === 'precio' || t.includes('monto'); });
-                
+
                 for (let i = 1; i < propDb.length; i++) {
                     const row = propDb[i];
                     let estadoVal = estadoColIdx !== -1 ? normalizeText(String(row[estadoColIdx])) : "";
-                    
+
                     let isPropiaOrCamping = estadoVal.includes('propia') || estadoVal.includes('camping');
                     let isRetirado = estadoVal.includes('retirado') || estadoVal.includes('entregado') || estadoVal.includes('nota de credito');
-                    
+
                     if (isRetirado) {
                         isPropiaOrCamping = false;
                     }
-                    
+
                     let diasVal = diasColIdx !== -1 ? row[diasColIdx] : 0;
                     let mora = parseFloat(String(diasVal).replace(/[.₲\s%]/g, '').replace(',', '.'));
 
                     let precioVal = precioColIdx !== -1 ? cleanAndParseNumber(row[precioColIdx]) : 0;
-                    
+
                     if (isPropiaOrCamping) {
                         capitalPendienteTotal += precioVal;
-                        
+
                         if (!isNaN(mora)) {
                             if (mora > 30) {
                                 demorasActivas30++;
@@ -705,31 +705,31 @@
             // NUEVA LOGICA: Total Activos es literalmente >30 + <30
             const totalActivos = demorasActivas30 + alDiaPropios;
 
-            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS 
-            setSafeText('kpi-mas-30', demorasActivas30); 
+            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS
+            setSafeText('kpi-mas-30', demorasActivas30);
             setSafeText('kpi-cartera-total', totalActivos);
-            setSafeText('kpi-menos-30', alDiaPropios); 
+            setSafeText('kpi-menos-30', alDiaPropios);
             setSafeText('val-cartera-monto', formatGuaranies(capitalPendienteTotal));
-            
+
             setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
             setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
             setSafeText('td-total-cant', totalActivos); setSafeText('td-total-monto', formatGuaranies(capitalPendienteTotal));
 
             updateDonutChart(propiaCant, campingCant);
-            
+
             const rTotalCH = extractSmartMonthlyData(resumen, "cantidad de gestiones de documentos para ch");
             const rEmisionRP = extractSmartMonthlyData(resumen, "emision de rp");
-            const rDemorasGrafico = extractSmartMonthlyData(resumen, "demoraron mas de 30"); 
+            const rDemorasGrafico = extractSmartMonthlyData(resumen, "demoraron mas de 30");
             updateMixedChart(rTotalCH, rEmisionRP, rDemorasGrafico);
 
-            renderGestionArmas(data["GESTIONES"] || [], "tabla-gestion-armas");
+            renderGestionArmas(data["ENTREGAS - ARMAS"] || [], "tabla-gestion-armas");
 
             renderGestiones2026(data["ENTREGAS - ARMAS"] || [], "tabla-gestiones");
             renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
             renderDatabaseTable(data["CARNET DE HABILITACION"] || [], "tabla-habilitacion", "habilitacion");
             renderDatabaseTable(data["PERMISOS DE COMERCIALIZACION"] || [], "tabla-comercializacion", "comercializacion");
-            renderDatabaseTable(data["COMPRA DE ARMAS"] || [], "tabla-compras", "compras"); 
-            
+            renderDatabaseTable(data["COMPRA DE ARMAS"] || [], "tabla-compras", "compras");
+
             ['propiedad', 'habilitacion', 'comercializacion', 'compras'].forEach(tab => applyAllFilters(tab));
         }
     </script>
@@ -755,7 +755,7 @@
             <img src="LOGOC44.png" alt="Logo C44" class="max-h-12 w-auto object-contain hidden md:block" onerror="this.style.display='none'">
             <i data-lucide="layout-dashboard" class="w-8 h-8 text-blue-600 block md:hidden"></i>
         </div>
-        
+
         <nav class="flex-1 p-3 md:p-4 space-y-2 overflow-y-auto">
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 mt-2 hidden md:block">Analítica & Control</p>
             <button id="btn-resumen" onclick="switchTab('resumen')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-bold rounded-lg bg-blue-600 text-white shadow-md transition-all">
@@ -764,7 +764,7 @@
             <button id="btn-gestiones" onclick="switchTab('gestiones')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
                 <i data-lucide="calendar-check" class="w-5 h-5 text-orange-500"></i> <span class="hidden md:block">Gestión Propia y Camping</span>
             </button>
-            
+
             <div class="my-4 border-t border-slate-100"></div>
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 hidden md:block">Bases de Datos</p>
             <button id="btn-propiedad" onclick="switchTab('propiedad')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
@@ -802,9 +802,9 @@
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
-            
+
             <section id="tab-resumen" class="tab-content active space-y-8">
-                
+
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                     <div onclick="drillDown('propiedad', 'mora_activos')" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Ver carpetas activas con mora">
                         <div class="flex justify-between items-start">
@@ -818,7 +818,7 @@
                             <div class="bg-rose-50 p-3 rounded-xl text-rose-500"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-                    
+
                     <div onclick="drillDown('propiedad', 'activos')" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group" title="Ver todos los activos en proceso">
                         <div class="flex justify-between items-start">
                             <div>
@@ -831,7 +831,7 @@
                             <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i data-lucide="users" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-                    
+
                     <div onclick="drillDown('propiedad', 'al_dia_propios')" class="clickable-card glass-card border-t-4 border-t-purple-500 p-6 relative group" title="Ver clientes sanos de Propia y Camping">
                         <div class="flex justify-between items-start">
                             <div>
@@ -844,7 +844,7 @@
                             <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-                    
+
                     <div class="glass-card border-t-4 border-t-emerald-500 p-6 relative bg-gradient-to-br from-white to-emerald-50/30">
                         <div class="flex justify-between items-start">
                             <div>
@@ -861,7 +861,7 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 flex flex-col gap-6">
-                        
+
                         <div class="glass-card flex flex-col overflow-hidden h-full">
                             <div class="px-6 py-5 border-b border-slate-100">
                                 <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Principal</h3>
@@ -912,7 +912,7 @@
                 </div>
 
             </section>
-            
+
             <section id="tab-gestiones" class="tab-content space-y-4"><div id="tabla-gestiones"></div></section>
             <section id="tab-propiedad" class="tab-content space-y-4"><div id="tabla-propiedad"></div></section>
             <section id="tab-habilitacion" class="tab-content space-y-4"><div id="tabla-habilitacion"></div></section>
@@ -923,7 +923,7 @@
 
     <script>
         let donutObj, mixedObj;
-        
+
         function handleChartClick(event, elements, chart, type) {
             if (elements.length > 0) {
                 const elementIndex = elements[0].index;
@@ -931,7 +931,7 @@
                 if (type === 'donut') {
                     const labels = ['propia', 'camping'];
                     keyword = labels[elementIndex];
-                    drillDown('propiedad', keyword); 
+                    drillDown('propiedad', keyword);
                 } else if (type === 'mixed') {
                     const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
                     keyword = labels[elementIndex];
