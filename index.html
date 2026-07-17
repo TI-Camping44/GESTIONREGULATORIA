@@ -320,6 +320,119 @@
             container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
         }
 
+        // --- PARSEO DE FECHAS FLEXIBLE (soporta M/D/AAAA, D/M/AAAA e ISO) ---
+        function parseFlexibleDate(str) {
+            if (!str) return null;
+            str = String(str).trim();
+            if (str.match(/^\d{4}-\d{2}-\d{2}T/)) { const d = new Date(str); return isNaN(d.getTime()) ? null : d; }
+            let m = str.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/);
+            if (m) {
+                let a = parseInt(m[1], 10), b = parseInt(m[2], 10), y = parseInt(m[3], 10);
+                if (y < 100) y += 2000;
+                let day, month;
+                if (a > 12) { day = a; month = b; }        // Formato D/M
+                else if (b > 12) { month = a; day = b; }   // Formato M/D
+                else { month = a; day = b; }               // Ambiguo -> asume M/D
+                const d = new Date(y, month - 1, day);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            const d = new Date(str);
+            return isNaN(d.getTime()) ? null : d;
+        }
+
+        // --- RENOVACIÓN DE CARNETS (se extrae de la hoja RESUMEN) ---
+        function renderRenovaciones(resumenMatrix, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const emptyBox = (msg) => `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>${msg}</p></div>`;
+
+            if (!resumenMatrix || !resumenMatrix.length) { container.innerHTML = emptyBox('Sin datos en la hoja RESUMEN.'); lucide.createIcons(); return; }
+
+            // 1) Ubicar la fila de encabezado del bloque (contiene "FECHA DE VENCIMIENTO")
+            let headerIdx = resumenMatrix.findIndex(r => {
+                const s = normalizeText((r || []).join(' '));
+                return s.includes('fecha de vencimiento') && (s.includes('faltan') || s.includes('item'));
+            });
+            if (headerIdx === -1) { container.innerHTML = emptyBox('No se encontró la sección de "Renovación de Carnets" dentro de la hoja RESUMEN.'); lucide.createIcons(); return; }
+
+            const headerRow = resumenMatrix[headerIdx];
+            let itemIdx = headerRow.findIndex(c => normalizeText(c).includes('item'));
+            let vencIdx = headerRow.findIndex(c => normalizeText(c).includes('vencimiento'));
+            if (itemIdx === -1) itemIdx = 0;
+
+            // 2) Leer las filas de ítems hasta encontrar una fila vacía
+            let items = [];
+            for (let i = headerIdx + 1; i < resumenMatrix.length; i++) {
+                const r = resumenMatrix[i] || [];
+                const item = String(r[itemIdx] || '').trim();
+                if (item === '') break;                                   // fin del bloque
+                if (normalizeText(item).includes('total')) continue;
+                const venc = vencIdx !== -1 ? String(r[vencIdx] || '').trim() : '';
+                // Observación: primera celda con texto largo a la derecha de la fecha
+                let nota = '';
+                const from = vencIdx !== -1 ? vencIdx + 1 : itemIdx + 1;
+                for (let c = from; c < r.length; c++) {
+                    const cell = String(r[c] || '').trim();
+                    if (cell !== '' && isNaN(parseFloat(cell)) && !cell.match(/^\d{1,2}[\/\-.]/) && cell.length > 8) { nota = cell; break; }
+                }
+                items.push({ item, venc, nota });
+            }
+
+            if (!items.length) { container.innerHTML = emptyBox('No hay ítems de renovación cargados.'); lucide.createIcons(); return; }
+
+            // 3) Construir la tabla con cálculo de días y estado
+            let html = `<div class='modern-table-container'><table class='modern-table'><thead><tr>
+                <th onclick="sortTable(this)">Ítem <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>
+                <th onclick="sortTable(this)" class="text-center">Fecha de Vencimiento</th>
+                <th onclick="sortTable(this)" class="text-center">Días Restantes</th>
+                <th class="text-center">Estado</th>
+                <th>Observación</th>
+            </tr></thead><tbody class="divide-y divide-slate-100">`;
+
+            const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+
+            items.forEach(({ item, venc, nota }) => {
+                const d = parseFlexibleDate(venc);
+                let dias = d ? Math.ceil((d.getTime() - hoy.getTime()) / 86400000) : null;
+                let fechaTxt = d ? d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' }) : (venc || '—');
+
+                // Estado
+                let noRenueva = normalizeText(nota).includes('no hace falta') || normalizeText(nota).includes('no requiere');
+                let badge, diasTxt;
+                if (noRenueva) {
+                    badge = `<span class="bg-slate-100 text-slate-600 border border-slate-200 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide">No requiere</span>`;
+                    diasTxt = `<span class="text-slate-300">—</span>`;
+                } else if (dias === null) {
+                    badge = `<span class="bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide">Sin fecha</span>`;
+                    diasTxt = `<span class="text-slate-300">—</span>`;
+                } else if (dias < 0) {
+                    badge = `<span class="bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide">Vencido</span>`;
+                    diasTxt = `<span class="font-bold text-rose-600">${dias}</span>`;
+                } else if (dias <= 30) {
+                    badge = `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide">Urgente</span>`;
+                    diasTxt = `<span class="font-bold text-orange-600">${dias}</span>`;
+                } else if (dias <= 90) {
+                    badge = `<span class="bg-amber-100 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide">Por vencer</span>`;
+                    diasTxt = `<span class="font-bold text-amber-600">${dias}</span>`;
+                } else {
+                    badge = `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide">Vigente</span>`;
+                    diasTxt = `<span class="font-bold text-emerald-600">${dias}</span>`;
+                }
+
+                html += `<tr class="searchable-row">
+                    <td class="font-semibold text-slate-800">${item}</td>
+                    <td class="text-center font-medium text-slate-700">${fechaTxt}</td>
+                    <td class="text-center">${diasTxt}</td>
+                    <td class="text-center">${badge}</td>
+                    <td class="text-slate-500 text-xs">${nota || ''}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
         // RENDERIZADO DE TABLA (FILTRO OCULTO DE COLUMNAS APLICADO CORRECTAMENTE)
         function renderDatabaseTable(rawMatrix, containerId, tabName) {
             const container = document.getElementById(containerId);
@@ -457,7 +570,7 @@
             const activeBtn = document.getElementById('btn-' + tabId);
             if(activeBtn) { activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-50'); activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md'); }
 
-            const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'gestiones': 'Control Operativo: Gestión Propia y Camping', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
+            const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'gestiones': 'Control Operativo: Gestión Propia y Camping', 'renovaciones': 'Renovación de Carnets de Importador, Polígono y Contenedor', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
             setSafeText('main-title', titulos[tabId] || 'DIGEMABEL');
 
             document.getElementById('globalSearch').value = '';
@@ -724,6 +837,8 @@
 
             renderGestionArmas(data["ENTREGAS - ARMAS"] || [], "tabla-gestion-armas");
 
+            renderRenovaciones(resumen, "tabla-renovaciones");
+
             renderGestiones2026(data["ENTREGAS - ARMAS"] || [], "tabla-gestiones");
             renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
             renderDatabaseTable(data["CARNET DE HABILITACION"] || [], "tabla-habilitacion", "habilitacion");
@@ -763,6 +878,9 @@
             </button>
             <button id="btn-gestiones" onclick="switchTab('gestiones')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
                 <i data-lucide="calendar-check" class="w-5 h-5 text-orange-500"></i> <span class="hidden md:block">Gestión Propia y Camping</span>
+            </button>
+            <button id="btn-renovaciones" onclick="switchTab('renovaciones')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
+                <i data-lucide="calendar-clock" class="w-5 h-5 text-rose-500"></i> <span class="hidden md:block">Renovación de Carnets</span>
             </button>
 
             <div class="my-4 border-t border-slate-100"></div>
@@ -914,6 +1032,13 @@
             </section>
 
             <section id="tab-gestiones" class="tab-content space-y-4"><div id="tabla-gestiones"></div></section>
+            <section id="tab-renovaciones" class="tab-content space-y-4">
+                <div class="glass-card p-5 border-l-4 border-l-rose-500 bg-gradient-to-br from-white to-rose-50/30">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="shield-alert" class="w-5 h-5 text-rose-500"></i> Renovación de Carnets de Importador, Polígono y Contenedor en DIMABEL</h3>
+                    <p class="text-xs text-slate-500 mt-2">Tener en físico y vigente los carnets y contratos necesarios para la operatividad de la empresa. Los días restantes se calculan automáticamente respecto a la fecha de hoy.</p>
+                </div>
+                <div id="tabla-renovaciones"></div>
+            </section>
             <section id="tab-propiedad" class="tab-content space-y-4"><div id="tabla-propiedad"></div></section>
             <section id="tab-habilitacion" class="tab-content space-y-4"><div id="tabla-habilitacion"></div></section>
             <section id="tab-compras" class="tab-content space-y-4"><div id="tabla-compras"></div></section>
