@@ -14,14 +14,11 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
         .tab-content { display: none; opacity: 0; transition: opacity 0.3s ease; }
         .tab-content.active { display: block; opacity: 1; }
-
         .glass-card { background: #ffffff; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; border-radius: 12px; }
         .clickable-card { cursor: pointer; transition: all 0.2s ease; border-width: 2px; }
         .clickable-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
-
         .modern-table-container { width: 100%; overflow-x: auto; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .modern-table { width: 100%; border-collapse: collapse; text-align: left; }
         .modern-table th { background-color: #f1f5f9; color: #475569; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 16px; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 10; cursor: pointer; white-space: nowrap; }
@@ -29,54 +26,76 @@
         .modern-table td { padding: 12px 16px; font-size: 13px; color: #1e293b; border-bottom: 1px solid #f1f5f9; white-space: nowrap; }
         .modern-table tbody tr.searchable-row:nth-child(even) { background-color: #f8fafc; }
         .modern-table tbody tr.searchable-row:hover { background-color: #eff6ff; }
-
         .gestiones-block { margin-bottom: 2rem; background: #fff; border-radius: 8px; border: 1px solid #e2e8f0; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .gestiones-header { background: #1e293b; color: #fff; padding: 12px 16px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
         .gestiones-table { width: 100%; border-collapse: collapse; }
         .gestiones-table th { background: #f8fafc; padding: 10px; font-size: 11px; color: #64748b; text-align: center; border-bottom: 1px solid #e2e8f0; font-weight: 600; }
         .gestiones-table td { padding: 12px 10px; font-size: 14px; text-align: center; font-weight: 600; border-bottom: 1px solid #f1f5f9; color: #334155; }
-
         .filter-select { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: #475569; outline: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .filter-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
-
         .toast { position: fixed; bottom: 30px; right: 30px; background: #1e293b; color: #fff; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; z-index: 9999; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.2); pointer-events: none; }
         .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-
         .tooltip-container { position: relative; display: inline-block; }
         .info-tooltip { visibility: hidden; opacity: 0; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%) translateY(10px); background-color: #1e293b; color: white; text-align: left; padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: 500; width: 220px; z-index: 50; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); pointer-events: none; line-height: 1.4; text-transform: none; letter-spacing: normal; }
         .info-tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #1e293b transparent transparent transparent; }
         .tooltip-container:hover .info-tooltip { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(-5px); }
-
         /* Variante hacia abajo: evita que el globito se corte en las tarjetas superiores */
         .info-tooltip.below { bottom: auto; top: 100%; transform: translateX(-50%) translateY(-10px); }
         .info-tooltip.below::after { top: auto; bottom: 100%; border-color: transparent transparent #1e293b transparent; }
         .tooltip-container:hover .info-tooltip.below { transform: translateX(-50%) translateY(6px); }
+
+        /* ===== REPORTES: PENDIENTES POR AÑO / POR GESTIÓN ===== */
+        .rep-panel { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; }
+        .rep-head { padding: 18px 24px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+        .rep-title { font-size: 13px; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
+        .rep-chip { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; padding: 4px 10px; border-radius: 999px; background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+        .rep-body { padding: 20px 24px 24px; flex: 1; }
+
+        .year-row { display: grid; grid-template-columns: 62px 1fr 46px; align-items: center; gap: 14px; padding: 9px 0; cursor: default; }
+        .year-label { font-size: 13px; font-weight: 800; color: #334155; font-variant-numeric: tabular-nums; }
+        .year-track { height: 10px; border-radius: 999px; background: #f1f5f9; overflow: hidden; }
+        .year-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #60a5fa 0%, #3b82f6 100%); width: 0; transition: width .9s cubic-bezier(.16,1,.3,1); }
+        .year-fill.hot { background: linear-gradient(90deg, #fb7185 0%, #e11d48 100%); }
+        .year-count { font-size: 15px; font-weight: 800; color: #0f172a; text-align: right; font-variant-numeric: tabular-nums; }
+
+        .rep-total { display: flex; align-items: baseline; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #e2e8f0; }
+        .rep-total span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: #94a3b8; }
+        .rep-total strong { font-size: 26px; font-weight: 900; color: #0f172a; font-variant-numeric: tabular-nums; }
+
+        .gtab { width: 100%; border-collapse: collapse; }
+        .gtab th { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; padding: 0 12px 10px; text-align: center; }
+        .gtab th:first-child { text-align: left; }
+        .gtab td { padding: 11px 12px; border-top: 1px solid #f1f5f9; font-size: 13px; text-align: center; font-variant-numeric: tabular-nums; }
+        .gtab td:first-child { text-align: left; font-weight: 700; color: #334155; }
+        .gtab tr.g-row:hover { background: #f8fafc; }
+        .g-pill { display: inline-flex; min-width: 34px; justify-content: center; padding: 3px 9px; border-radius: 8px; font-weight: 800; font-size: 12px; }
+        .g-hot { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+        .g-cool { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .g-zero { background: #f8fafc; color: #cbd5e1; border: 1px solid #f1f5f9; }
+        .g-dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 8px; vertical-align: middle; }
+        .gtab tr.g-total td { border-top: 2px solid #e2e8f0; font-weight: 900; color: #0f172a; font-size: 14px; padding-top: 14px; }
 
         @media print {
             body { background-color: #fff; color: #000; font-size: 10pt; }
             aside, header, button, select, .filter-select, #loader, .sync-indicator, .info-tooltip, [title*="Clic"] { display: none !important; }
             main { width: 100% !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }
             .tab-content { display: block !important; opacity: 1 !important; overflow: visible !important; }
-            .glass-card { box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-inside: avoid; }
+            .glass-card, .rep-panel { box-shadow: none !important; border: 1px solid #cbd5e1 !important; page-break-inside: avoid; }
         }
     </style>
-
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyevgktsgtDL2EKT-ixwIH9dXKiEIH65bZoAzfpEns3j5xEYQiRZZVIGqZzK-HJl_SG/exec";
-        const CACHE_KEY = "DIGEMABEL_CACHE_V29";
+        const CACHE_KEY = "DIGEMABEL_CACHE_V30";
         let rawDataCache = null;
-
         // --- UTILIDADES ---
         function normalizeText(text) {
             if (!text) return "";
-            return String(text).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+            return String(text).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
         }
-
         function setSafeText(elementId, text) {
             const el = document.getElementById(elementId);
             if (el) el.innerText = text;
         }
-
         function cleanAndParseNumber(cellValue) {
             if (!cellValue || String(cellValue).includes("#VALUE!") || String(cellValue).includes("#DIV/0!")) return 0;
             let cleanStr = String(cellValue).replace(/[.₲\s%]/g, '').replace(',', '.').trim();
@@ -84,11 +103,9 @@
             let parsed = parseFloat(cleanStr);
             return isNaN(parsed) ? 0 : parsed;
         }
-
         function formatGuaranies(val) {
             return "₲ " + Math.round(val).toLocaleString('es-PY');
         }
-
         function formatBeautifulDate(str) {
             if (typeof str === 'string' && str.match(/^\d{4}-\d{2}-\d{2}T/)) {
                 const date = new Date(str);
@@ -96,7 +113,6 @@
             }
             return str;
         }
-
         function createBadge(text) {
             const t = String(text).trim().toUpperCase();
             if (t.includes('PROPIA')) return `<span class="bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
@@ -107,65 +123,66 @@
             if (t === 'FALTA' || t === 'PENDIENTE') return `<span class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase tracking-wide">${text}</span>`;
             return text;
         }
-
         function findRowByLabel(matrix, keyword) {
             if (!matrix || !Array.isArray(matrix)) return null;
             const normKeyword = normalizeText(keyword);
             return matrix.find(row => row && Array.isArray(row) && row.some(cell => normalizeText(cell).includes(normKeyword)));
         }
-
         function extractNumbersFromRow(row) {
             if (!row) return [];
             return row.slice(1).map(c => cleanAndParseNumber(c)).filter(v => v !== 0);
         }
-
-        function extractSmartMonthlyData(resumenMatrix, keyword) {
-            let data = Array(12).fill(0);
-            const rowIdx = resumenMatrix.findIndex(r => r && Array.isArray(r) && r.some(c => normalizeText(String(c)).includes(normalizeText(keyword))));
-            if (rowIdx === -1) return data;
-
-            const targetRow = resumenMatrix[rowIdx];
-            let headerRow = null;
-            for (let i = rowIdx - 1; i >= 0; i--) {
-                const rStr = normalizeText(resumenMatrix[i].join(' '));
-                if (rStr.includes('enero') && rStr.includes('febrero')) { headerRow = resumenMatrix[i]; break; }
-            }
-
-            if (headerRow) {
-                const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-                meses.forEach((mes, idx) => {
-                    const colIdx = headerRow.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes));
-                    if (colIdx !== -1 && targetRow[colIdx] !== undefined) data[idx] = cleanAndParseNumber(targetRow[colIdx]);
-                });
-            } else {
-                for(let i=0; i<12; i++) data[i] = cleanAndParseNumber(targetRow[i+1]);
-            }
-            return data;
+        // Busca una hoja por cualquiera de sus nombres posibles (soporta el renombrado RESUMEN -> REPORTES)
+        function getSheet(data, names) {
+            if (!data) return [];
+            for (const n of names) { if (data[n]) return data[n]; }
+            const norm = names.map(n => normalizeText(n));
+            const key = Object.keys(data).find(k => norm.includes(normalizeText(k)));
+            return key ? data[key] : [];
         }
-
+        function findCol(headers, keys) {
+            for (const k of keys) {
+                const i = headers.findIndex(h => normalizeText(h) === k);
+                if (i !== -1) return i;
+            }
+            for (const k of keys) {
+                const i = headers.findIndex(h => normalizeText(h).includes(k));
+                if (i !== -1) return i;
+            }
+            return -1;
+        }
+        function esEstadoCerrado(normEstado) {
+            return normEstado.includes('retirado') || normEstado.includes('entregado') || normEstado.includes('nota de credito');
+        }
+        // Categoriza el ESTADO GENERAL en los 4 segmentos pendientes del reporte
+        function categoriaGestion(rawEstado) {
+            const t = normalizeText(rawEstado);
+            if (!t || esEstadoCerrado(t)) return null;
+            if (t.includes('camping')) return 'camping';
+            if (t.includes('propia')) return 'propia';
+            if (t.includes('senado')) return 'senado';
+            if (t.includes('sin pago')) return 'sinpago';
+            return null;
+        }
         function sortTable(thElement, isAutoSort = false) {
             const table = thElement.closest('table');
             const tbody = table.querySelector('tbody');
             const rows = Array.from(tbody.querySelectorAll('tr.searchable-row'));
             const colIndex = Array.from(thElement.parentNode.children).indexOf(thElement);
-
             let isAsc = isAutoSort ? false : thElement.classList.contains('asc');
             table.querySelectorAll('th').forEach(th => th.classList.remove('asc', 'desc'));
             thElement.classList.add(isAsc ? 'desc' : 'asc');
-
             rows.sort((a, b) => {
                 const aCol = a.children[colIndex]; const bCol = b.children[colIndex];
                 if(!aCol || !bCol) return 0;
-                let aText = aCol.textContent.trim(); let bText = bCol.textContent.trim(); // Se cambia innerText por textContent para leer columnas ocultas
+                let aText = aCol.textContent.trim(); let bText = bCol.textContent.trim();
                 let aNum = parseFloat(aText.replace(/[.₲\s%]/g, '').replace(',', '.'));
                 let bNum = parseFloat(bText.replace(/[.₲\s%]/g, '').replace(',', '.'));
-
                 if (!isNaN(aNum) && !isNaN(bNum)) return isAsc ? aNum - bNum : bNum - aNum;
                 return isAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
             });
             rows.forEach(row => tbody.appendChild(row));
         }
-
         function purifyMatrix(matrix) {
             if (!matrix || matrix.length === 0) return [];
             let rows = matrix.filter(row => {
@@ -174,7 +191,6 @@
                 return !isAllEmpty && (!isJustNumbers || row[0] !== '');
             });
             if(rows.length === 0) return [];
-
             let colCount = rows[0].length; let colsToKeep = [];
             for(let c=0; c<colCount; c++) {
                 let hasRealData = false;
@@ -186,7 +202,6 @@
             }
             return rows.map(row => row.filter((_, c) => colsToKeep.includes(c)));
         }
-
         // --- SISTEMAS DE COPIA Y EXPORTACIÓN ---
         function copyToClipboard(cliente, dias, estado, tabName) {
             const msg = `⚠️ *Alerta DIGEMABEL*\nCliente: ${cliente}\nTrámite: ${tabName.toUpperCase()}\nEstado: ${estado}\nDemora Actual: ${dias} días.\nPor favor, verificar estatus urgentemente.`;
@@ -198,7 +213,6 @@
                 setTimeout(() => toast.classList.remove('show'), 3000);
             });
         }
-
         function exportTableToCSV(tabName) {
             const table = document.getElementById(`table-${tabName}`);
             if (!table) return;
@@ -222,7 +236,6 @@
             link.click();
             document.body.removeChild(link);
         }
-
         // --- GENERADORES VISUALES ---
         function renderGestionArmas(matrix, containerId) {
             const container = document.getElementById(containerId);
@@ -230,7 +243,6 @@
                 container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium">No se detectaron datos en la hoja "ENTREGAS - ARMAS".</div>`;
                 return;
             }
-
             let html = `
                 <table class="w-full text-sm text-left">
                     <thead class="bg-slate-50 text-slate-500 font-semibold text-xs border-b border-slate-200">
@@ -242,29 +254,22 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
             `;
-
             let totalEntregas = 0;
             let totalVentas = 0;
             let hasData = false;
-
             matrix.forEach((row, idx) => {
                 if (idx === 0) return;
                 let mesStr = String(row[0] || '').trim();
-
                 if(mesStr.match(/^\d{4}-\d{2}-\d{2}T/)) {
                     const d = new Date(mesStr);
                     mesStr = d.toLocaleDateString('es-ES', { timeZone: 'UTC', month: 'long', year: 'numeric' });
                 }
-
                 if (mesStr === '' || mesStr.toUpperCase().includes('TOTAL')) return;
-
                 let entregas = parseInt(row[1]) || 0;
                 let ventas = parseInt(row[2]) || 0;
-
                 totalEntregas += entregas;
                 totalVentas += ventas;
                 hasData = true;
-
                 html += `
                     <tr class="hover:bg-slate-50/80 transition-colors">
                         <td class="py-3 px-6 font-semibold text-slate-700 capitalize">${mesStr}</td>
@@ -273,12 +278,10 @@
                     </tr>
                 `;
             });
-
             if (!hasData) {
                 container.innerHTML = `<div class="p-6 text-center text-slate-400 font-medium">No hay registros mensuales válidos.</div>`;
                 return;
             }
-
             html += `
                     <tr class="bg-slate-800 text-white">
                         <td class="py-4 px-6 font-bold text-xs uppercase tracking-wider">Total Acumulado</td>
@@ -290,39 +293,91 @@
             container.innerHTML = html;
         }
 
-        function renderGestiones2026(rawMatrix, containerId) {
-            const container = document.getElementById(containerId);
-            if (!rawMatrix || rawMatrix.length === 0) { container.innerHTML = `<p class="text-slate-500">Sin datos.</p>`; return; }
-            const mesesNombres = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            const mesesDisplay = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-            let html = ''; let currentBlockTitle = ''; let monthIndices = [0,1,2,3,4,5,6,7,8,9,10,11];
-
-            rawMatrix.forEach(row => {
-                const filledCells = row.filter(c => String(c).trim() !== "");
-                if (filledCells.length === 0) return;
-                const rowStr = normalizeText(row.join(' '));
-                if (rowStr.includes('enero') && rowStr.includes('febrero')) {
-                    monthIndices = mesesNombres.map(mes => row.findIndex(c => normalizeText(String(c)) === mes || normalizeText(String(c)).includes(mes)));
-                    let firstFound = monthIndices.find(idx => idx !== -1);
-                    if (firstFound !== undefined) { for(let i=0; i<12; i++) { if(monthIndices[i] === -1) monthIndices[i] = firstFound + i; } }
-                    return;
-                }
-                if (filledCells.length === 1 && isNaN(parseFloat(filledCells[0]))) { currentBlockTitle = String(filledCells[0]).toUpperCase(); return; }
-
-                if (currentBlockTitle !== '' && filledCells.some(c => !isNaN(parseFloat(c)))) {
-                    html += `<div class="gestiones-block"><div class="gestiones-header">${currentBlockTitle}</div><div class="overflow-x-auto"><table class="gestiones-table"><thead><tr>`;
-                    mesesDisplay.forEach(m => html += `<th>${m}</th>`);
-                    html += `</tr></thead><tbody><tr>`;
-                    for (let i = 0; i < 12; i++) {
-                        let colIdx = monthIndices[i]; let val = (colIdx !== -1 && row[colIdx] !== undefined) ? String(row[colIdx]).trim() : '';
-                        if (val.includes("#VALUE!") || val.includes("#DIV/0!")) { html += `<td><span class="text-slate-300 font-normal">-</span></td>`; }
-                        else { let num = parseFloat(val); if (!isNaN(num) && num !== 0) html += `<td class="font-bold text-slate-800">${num}</td>`; else html += `<td><span class="text-slate-300 font-normal">0</span></td>`; }
-                    }
-                    html += `</tr></tbody></table></div></div>`;
-                    currentBlockTitle = '';
-                }
+        // ==========================================================
+        // REPORTES DE PENDIENTES (reemplaza "Evolución Operativa")
+        // ==========================================================
+        function analizarPendientes(rawMatrix) {
+            const res = {
+                anios: [],
+                gestiones: [
+                    { key: 'propia',  label: 'Gestión Propia',   color: '#3b82f6', mas30: 0, menos30: 0, filtro: 'propia' },
+                    { key: 'camping', label: 'Gestión Camping',  color: '#a855f7', mas30: 0, menos30: 0, filtro: 'camping' },
+                    { key: 'senado',  label: 'Señado',           color: '#f59e0b', mas30: 0, menos30: 0, filtro: 'senado' },
+                    { key: 'sinpago', label: 'Sin pago alguno',  color: '#f43f5e', mas30: 0, menos30: 0, filtro: 'sin pago' }
+                ],
+                total: 0, totalMas30: 0, totalMenos30: 0
+            };
+            const matrix = purifyMatrix(rawMatrix || []);
+            if (matrix.length < 2) return res;
+            const headers = matrix[0];
+            const iEstado = findCol(headers, ['estado general', 'estado']);
+            const iDias   = findCol(headers, ['dias', 'dias de espera']);
+            const iAnio   = findCol(headers, ['ano', 'anio', 'ejercicio']);
+            const iFecha  = findCol(headers, ['fecha']);
+            const mapCat = {}; res.gestiones.forEach(g => mapCat[g.key] = g);
+            const anioMap = {};
+            for (let r = 1; r < matrix.length; r++) {
+                const row = matrix[r] || [];
+                const cat = categoriaGestion(iEstado !== -1 ? row[iEstado] : '');
+                if (!cat || !mapCat[cat]) continue;
+                const dias = parseFloat(String(iDias !== -1 ? row[iDias] : '').replace(/[.₲\s%]/g, '').replace(',', '.'));
+                if (!isNaN(dias) && dias > 30) { mapCat[cat].mas30++; res.totalMas30++; }
+                else { mapCat[cat].menos30++; res.totalMenos30++; }
+                let anio = '';
+                if (iAnio !== -1) { const v = String(row[iAnio] || '').trim(); if (/^\d{4}$/.test(v)) anio = v; }
+                if (!anio && iFecha !== -1) { const d = parseFlexibleDate(row[iFecha]); if (d) anio = String(d.getFullYear()); }
+                if (!anio) anio = 'Sin año';
+                anioMap[anio] = (anioMap[anio] || 0) + 1;
+                res.total++;
+            }
+            res.anios = Object.keys(anioMap).sort().map(a => ({ anio: a, cantidad: anioMap[a] }));
+            return res;
+        }
+        function renderPendientes(rawMatrix) {
+            const d = analizarPendientes(rawMatrix);
+            const contAnios = document.getElementById('pendientes-anios');
+            const contGest  = document.getElementById('pendientes-gestion');
+            if (!contAnios || !contGest) return;
+            // --- Panel por año ---
+            if (!d.anios.length) {
+                contAnios.innerHTML = `<div class="py-10 text-center text-slate-400 text-sm">Sin pendientes cargados.</div>`;
+            } else {
+                const max = Math.max(...d.anios.map(a => a.cantidad), 1);
+                const anioActual = new Date().getFullYear();
+                let h = '';
+                d.anios.forEach(a => {
+                    const pct = Math.max(4, Math.round((a.cantidad / max) * 100));
+                    const viejo = /^\d{4}$/.test(a.anio) && parseInt(a.anio, 10) < anioActual - 1;
+                    h += `<div class="year-row" title="${a.cantidad} pendientes del ${a.anio}">
+                            <div class="year-label">${a.anio}</div>
+                            <div class="year-track"><div class="year-fill ${viejo ? 'hot' : ''}" style="width:${pct}%"></div></div>
+                            <div class="year-count">${a.cantidad}</div>
+                          </div>`;
+                });
+                h += `<div class="rep-total"><span>Total pendientes</span><strong>${d.total}</strong></div>`;
+                contAnios.innerHTML = h;
+            }
+            // --- Panel por gestión ---
+            const pill = (n, cls) => `<span class="g-pill ${n === 0 ? 'g-zero' : cls}">${n}</span>`;
+            let g = `<table class="gtab"><thead><tr>
+                        <th>Segmento</th><th>+30 días</th><th>−30 días</th><th>Total</th>
+                     </tr></thead><tbody>`;
+            d.gestiones.forEach(x => {
+                const total = x.mas30 + x.menos30;
+                g += `<tr class="g-row cursor-pointer" onclick="drillDown('propiedad', '${x.filtro}')" title="Ver estos clientes en la base de datos">
+                        <td><span class="g-dot" style="background:${x.color}"></span>${x.label}</td>
+                        <td>${pill(x.mas30, 'g-hot')}</td>
+                        <td>${pill(x.menos30, 'g-cool')}</td>
+                        <td class="font-bold text-slate-800">${total}</td>
+                      </tr>`;
             });
-            container.innerHTML = html || `<p class="text-slate-500">No se pudo parsear la estructura.</p>`;
+            g += `<tr class="g-total">
+                    <td>TOTAL</td>
+                    <td class="text-rose-600">${d.totalMas30}</td>
+                    <td class="text-emerald-600">${d.totalMenos30}</td>
+                    <td>${d.total}</td>
+                  </tr></tbody></table>`;
+            contGest.innerHTML = g;
         }
 
         // --- PARSEO DE FECHAS FLEXIBLE (soporta M/D/AAAA, D/M/AAAA e ISO) ---
@@ -344,36 +399,28 @@
             const d = new Date(str);
             return isNaN(d.getTime()) ? null : d;
         }
-
-        // --- RENOVACIÓN DE CARNETS (se extrae de la hoja RESUMEN) ---
+        // --- RENOVACIÓN DE CARNETS (se extrae de la hoja REPORTES / RESUMEN) ---
         function renderRenovaciones(resumenMatrix, containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
             const emptyBox = (msg) => `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>${msg}</p></div>`;
-
-            if (!resumenMatrix || !resumenMatrix.length) { container.innerHTML = emptyBox('Sin datos en la hoja RESUMEN.'); lucide.createIcons(); return; }
-
-            // 1) Ubicar la fila de encabezado del bloque (contiene "FECHA DE VENCIMIENTO")
+            if (!resumenMatrix || !resumenMatrix.length) { container.innerHTML = emptyBox('Sin datos en la hoja REPORTES.'); lucide.createIcons(); return; }
             let headerIdx = resumenMatrix.findIndex(r => {
                 const s = normalizeText((r || []).join(' '));
                 return s.includes('fecha de vencimiento') && (s.includes('faltan') || s.includes('item'));
             });
-            if (headerIdx === -1) { container.innerHTML = emptyBox('No se encontró la sección de "Renovación de Carnets" dentro de la hoja RESUMEN.'); lucide.createIcons(); return; }
-
+            if (headerIdx === -1) { container.innerHTML = emptyBox('No se encontró la sección de "Renovación de Carnets" dentro de la hoja REPORTES.'); lucide.createIcons(); return; }
             const headerRow = resumenMatrix[headerIdx];
             let itemIdx = headerRow.findIndex(c => normalizeText(c).includes('item'));
             let vencIdx = headerRow.findIndex(c => normalizeText(c).includes('vencimiento'));
             if (itemIdx === -1) itemIdx = 0;
-
-            // 2) Leer las filas de ítems hasta encontrar una fila vacía
             let items = [];
             for (let i = headerIdx + 1; i < resumenMatrix.length; i++) {
                 const r = resumenMatrix[i] || [];
                 const item = String(r[itemIdx] || '').trim();
-                if (item === '') break;                                   // fin del bloque
+                if (item === '') break;
                 if (normalizeText(item).includes('total')) continue;
                 const venc = vencIdx !== -1 ? String(r[vencIdx] || '').trim() : '';
-                // Observación: primera celda con texto largo a la derecha de la fecha
                 let nota = '';
                 const from = vencIdx !== -1 ? vencIdx + 1 : itemIdx + 1;
                 for (let c = from; c < r.length; c++) {
@@ -382,10 +429,7 @@
                 }
                 items.push({ item, venc, nota });
             }
-
             if (!items.length) { container.innerHTML = emptyBox('No hay ítems de renovación cargados.'); lucide.createIcons(); return; }
-
-            // 3) Construir la tabla con cálculo de días y estado
             let html = `<div class='modern-table-container'><table class='modern-table'><thead><tr>
                 <th onclick="sortTable(this)">Ítem <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>
                 <th onclick="sortTable(this)" class="text-center">Fecha de Vencimiento</th>
@@ -393,15 +437,11 @@
                 <th class="text-center">Estado</th>
                 <th>Observación</th>
             </tr></thead><tbody class="divide-y divide-slate-100">`;
-
             const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-
             items.forEach(({ item, venc, nota }) => {
                 const d = parseFlexibleDate(venc);
                 let dias = d ? Math.ceil((d.getTime() - hoy.getTime()) / 86400000) : null;
                 let fechaTxt = d ? d.toLocaleDateString('es-PY', { day: '2-digit', month: '2-digit', year: 'numeric' }) : (venc || '—');
-
-                // Estado
                 let noRenueva = normalizeText(nota).includes('no hace falta') || normalizeText(nota).includes('no requiere');
                 let badge, diasTxt;
                 if (noRenueva) {
@@ -423,7 +463,6 @@
                     badge = `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full font-bold text-[10px] uppercase tracking-wide">Vigente</span>`;
                     diasTxt = `<span class="font-bold text-emerald-600">${dias}</span>`;
                 }
-
                 html += `<tr class="searchable-row">
                     <td class="font-semibold text-slate-800">${item}</td>
                     <td class="text-center font-medium text-slate-700">${fechaTxt}</td>
@@ -432,7 +471,77 @@
                     <td class="text-slate-500 text-xs">${nota || ''}</td>
                 </tr>`;
             });
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
 
+        // ==========================================================
+        // GESTIÓN CAMPING: solo clientes pendientes de camping
+        // Columnas: Nombre / Cédula / Estado General / Observaciones
+        // ==========================================================
+        function renderCampingPendientes(rawMatrix, containerId) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const emptyBox = (msg) => `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>${msg}</p></div>`;
+            const matrix = purifyMatrix(rawMatrix || []);
+            if (matrix.length < 2) { container.innerHTML = emptyBox('Sin datos en la base de Registro de Propiedad.'); lucide.createIcons(); return; }
+            const headers = matrix[0];
+            let iNombre = findCol(headers, ['nombre y apellido', 'nombre', 'cliente', 'razon social', 'titular']);
+            let iCedula = findCol(headers, ['cedula', 'c.i', 'ci', 'ruc', 'documento', 'nro de documento']);
+            const iEstado = findCol(headers, ['estado general', 'estado']);
+            let iObs = findCol(headers, ['observacion', 'observaciones', 'comentario', 'nota']);
+            const iDias = findCol(headers, ['dias']);
+            if (iNombre === -1) iNombre = 0;
+            const rows = [];
+            for (let r = 1; r < matrix.length; r++) {
+                const row = matrix[r] || [];
+                const est = normalizeText(iEstado !== -1 ? row[iEstado] : '');
+                if (!est.includes('camping') || esEstadoCerrado(est)) continue;
+                const dias = parseFloat(String(iDias !== -1 ? row[iDias] : '').replace(/[.₲\s%]/g, '').replace(',', '.'));
+                rows.push({
+                    nombre: String(row[iNombre] || '').trim() || '—',
+                    cedula: iCedula !== -1 ? (String(row[iCedula] || '').trim() || '—') : '—',
+                    estado: iEstado !== -1 ? String(row[iEstado] || '').trim() : '—',
+                    obs: iObs !== -1 ? String(row[iObs] || '').trim() : '',
+                    dias: isNaN(dias) ? null : dias
+                });
+            }
+            if (!rows.length) { container.innerHTML = emptyBox('No hay clientes de Gestión Camping pendientes en este momento.'); lucide.createIcons(); return; }
+            rows.sort((a, b) => (b.dias ?? -1) - (a.dias ?? -1));
+            const mas30 = rows.filter(r => r.dias !== null && r.dias > 30).length;
+            let html = `
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm print:hidden">
+                <div class="flex items-center gap-3">
+                    <div class="bg-purple-50 text-purple-600 p-2.5 rounded-xl border border-purple-100"><i data-lucide="tent" class="w-5 h-5"></i></div>
+                    <div>
+                        <p class="text-sm font-bold text-slate-800 leading-tight">Clientes pendientes de Gestión Camping</p>
+                        <p class="text-xs text-slate-500 mt-0.5">Nombre, cédula, estado general y observaciones. Se excluyen retirados y entregados.</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200">
+                    <span class="flex items-center gap-1.5"><i data-lucide="users" class="w-3.5 h-3.5 text-purple-500"></i> Pendientes: <span id="count-gestiones" class="text-slate-800 text-sm">${rows.length}</span></span>
+                    <div class="w-px h-4 bg-slate-300"></div>
+                    <span class="flex items-center gap-1.5 text-rose-600"><i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i> +30 días: ${mas30}</span>
+                    <button onclick="exportTableToCSV('gestiones')" class="ml-1 bg-slate-800 text-white px-3 py-1.5 rounded hover:bg-slate-700 transition flex items-center gap-1.5 shadow-sm" title="Descargar como Excel/CSV">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline">Exportar CSV</span>
+                    </button>
+                </div>
+            </div>
+            <div class='modern-table-container'><table class='modern-table' id='table-gestiones'><thead><tr>
+                <th onclick="sortTable(this)">Nombre <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>
+                <th onclick="sortTable(this)">Cédula <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>
+                <th onclick="sortTable(this)" class="text-center">Estado General <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>
+                <th>Observaciones</th>
+            </tr></thead><tbody class="divide-y divide-slate-100">`;
+            rows.forEach(r => {
+                html += `<tr class="searchable-row">
+                    <td class="font-semibold text-slate-800">${r.nombre}</td>
+                    <td class="text-slate-600 font-medium">${r.cedula}</td>
+                    <td class="text-center">${createBadge(r.estado)}</td>
+                    <td class="text-slate-500 text-xs whitespace-normal max-w-md">${r.obs || '<span class="text-slate-300">—</span>'}</td>
+                </tr>`;
+            });
             html += `</tbody></table></div>`;
             container.innerHTML = html;
             lucide.createIcons();
@@ -443,56 +552,43 @@
             const container = document.getElementById(containerId);
             const matrix = purifyMatrix(rawMatrix);
             if (!matrix || matrix.length === 0) { container.innerHTML = `<div class="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-200"><i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-40"></i><p>No hay registros.</p></div>`; return; }
-
             let headers = matrix[0]; let dataRows = matrix.slice(1);
             let diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
             let estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
-
-            // Definimos qué columnas queremos ver en la pestaña "propiedad" (A, B, E, F, G, K, U) -> Índices: 0, 1, 4, 5, 6, 10, 20
             let visibleCols = null;
             if (tabName === 'propiedad') {
                 visibleCols = [0, 1, 4, 5, 6, 10, 20];
             }
-
             let tableHtml = `<div class='modern-table-container'><table class='modern-table' id='table-${tabName}'><thead><tr>`;
             headers.forEach((h, cIdx) => {
                 let isHidden = (visibleCols && !visibleCols.includes(cIdx)) ? "display:none;" : "";
                 tableHtml += `<th style="${isHidden}" onclick="sortTable(this)">${String(h).trim()} <i data-lucide="arrow-up-down" class="inline w-3 h-3 text-slate-300 ml-1"></i></th>`;
             });
             tableHtml += `</tr></thead><tbody class="divide-y divide-slate-100">`;
-
             dataRows.forEach(row => {
                 let clienteName = "";
                 let diasValue = diasColIdx !== -1 ? row[diasColIdx] : "N/A";
                 let numDias = parseFloat(String(diasValue).replace(/[.₲\s%]/g, '').replace(',', '.'));
-
                 let estadoVal = estadoColIdx !== -1 ? normalizeText(String(row[estadoColIdx])) : "";
                 let estadoStrForCopy = estadoColIdx !== -1 ? String(row[estadoColIdx]).trim().toUpperCase() : "N/A";
-
                 tableHtml += `<tr class="searchable-row" data-tab="${tabName}" data-estado="${estadoVal}" data-mora="${isNaN(numDias) ? 0 : numDias}">`;
-
                 row.forEach((cell, cIdx) => {
                     let rawStr = String(cell).trim(); let cellStr = formatBeautifulDate(rawStr); let alignClass = "text-left"; let innerHtml = cellStr;
-
                     if (rawStr.includes("#VALUE!") || rawStr.includes("#DIV/0!")) { innerHtml = `<span class="text-slate-300">-</span>`; alignClass = "text-center"; }
                     else if (rawStr.includes("₲")) { alignClass = "text-right font-bold text-slate-700"; }
                     else if (isNaN(parseFloat(rawStr)) && rawStr !== '') { innerHtml = createBadge(cellStr); }
                     else if (!isNaN(parseFloat(rawStr)) && rawStr !== '') { alignClass = "text-center font-medium text-slate-700"; }
                     if (cIdx === 0) alignClass = "text-left font-semibold text-slate-800";
-
                     if (isNaN(parseFloat(rawStr)) && rawStr.length > 5 && clienteName === "") { clienteName = rawStr.replace(/"/g, '').replace(/'/g, ''); }
-
                     if (innerHtml === cellStr && isNaN(parseFloat(rawStr)) && rawStr.length > 5 && !tableHtml.includes(`onclick="copyToClipboard`)) {
                         innerHtml = `<div class="flex items-center justify-between gap-3 group/btn"><span class="truncate max-w-xs block" title="${cellStr}">${cellStr}</span><button onclick="copyToClipboard('${clienteName}', '${diasValue}', '${estadoStrForCopy}', '${tabName}')" class="text-slate-400 hover:text-blue-600 bg-slate-100 hover:bg-blue-50 p-1.5 rounded-md opacity-0 group-hover/btn:opacity-100 transition-all flex-shrink-0" title="Copiar Datos para Reclamo"><i data-lucide="copy" class="w-3.5 h-3.5"></i></button></div>`;
                     }
-
                     let isHidden = (visibleCols && !visibleCols.includes(cIdx)) ? "display:none;" : "";
                     tableHtml += `<td class="${alignClass}" style="${isHidden}" data-raw="${normalizeText(rawStr)}">${innerHtml}</td>`;
                 });
                 tableHtml += `</tr>`;
             });
             tableHtml += `</tbody></table></div>`;
-
             let filtersHtml = `
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-4 gap-4 bg-white p-3 rounded-xl border border-slate-200 shadow-sm print:hidden">
                 <div class="flex flex-wrap gap-2 items-center w-full xl:w-auto" id="filters-${tabName}">
@@ -500,7 +596,6 @@
                         <i data-lucide="filter" class="w-4 h-4 text-blue-500 cursor-help"></i>
                         <span class="info-tooltip">Filtros Automáticos detectados de tu Excel</span>
                     </div>`;
-
             headers.forEach((h, colIndex) => {
                 const title = String(h).toUpperCase();
                 if (title.includes('DÍA') || title.includes('DIA') || title.includes('ESPERA')) {
@@ -525,7 +620,6 @@
                     }
                 }
             });
-
             filtersHtml += `
                 <button onclick="resetFilters('${tabName}')" class="text-xs font-bold text-slate-400 hover:text-rose-500 ml-1 flex items-center gap-1 transition-colors" title="Borrar filtros">
                     <i data-lucide="x-circle" class="w-4 h-4"></i> Limpiar
@@ -534,7 +628,6 @@
                     <span id="badge-text-${tabName}">Filtro Activo</span> <button onclick="clearSpecialFilter('${tabName}')" class="hover:text-indigo-900"><i data-lucide="x" class="w-3 h-3"></i></button>
                 </div>
                 </div>
-
                 <div class="flex items-center gap-3 text-xs font-bold text-slate-600 bg-slate-50 px-3 py-2 rounded-lg border border-slate-200 flex-shrink-0">
                     <div class="flex items-center gap-1.5"><i data-lucide="list" class="w-3.5 h-3.5 text-blue-500"></i> Registros: <span id="count-${tabName}" class="text-slate-800 text-sm">${dataRows.length}</span></div>
                     <div class="w-px h-4 bg-slate-300 hidden md:block" id="sum-div-${tabName}"></div>
@@ -544,9 +637,7 @@
                     </button>
                 </div>
             </div>`;
-
             container.innerHTML = filtersHtml + tableHtml;
-
             setTimeout(() => {
                 const tableEl = document.getElementById(`table-${tabName}`);
                 if(tableEl) {
@@ -556,7 +647,6 @@
                 }
             }, 100);
         }
-
         // --- LÓGICA DE FILTRADO INTERACTIVO ---
         function clearSpecialFilter(tabName) {
             const table = document.getElementById(`table-${tabName}`);
@@ -565,38 +655,30 @@
             if(badge) badge.classList.add('hidden');
             applyAllFilters(tabName);
         }
-
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.nav-btn').forEach(el => { el.classList.remove('bg-blue-600', 'text-white', 'shadow-md'); el.classList.add('text-slate-500', 'hover:bg-slate-50'); });
-
             const activeTab = document.getElementById('tab-' + tabId);
             if(activeTab) activeTab.classList.add('active');
             const activeBtn = document.getElementById('btn-' + tabId);
             if(activeBtn) { activeBtn.classList.remove('text-slate-500', 'hover:bg-slate-50'); activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md'); }
-
-            const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'gestiones': 'Control Operativo: Gestión Propia y Camping', 'renovaciones': 'Renovación de Carnets de Importador, Polígono y Contenedor', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
+            const titulos = { 'resumen': 'GESTION REGULATORIA C44 - GESTIONES', 'gestiones': 'Gestión Camping: Clientes Pendientes', 'renovaciones': 'Renovación de Carnets de Importador, Polígono y Contenedor', 'propiedad': 'Base de Datos: Registro de Propiedad', 'habilitacion': 'Base de Datos: Carnet de Habilitación', 'comercializacion': 'Base de Datos: Permisos de Comercialización', 'compras': 'Base de Datos: Compra de Armas' };
             setSafeText('main-title', titulos[tabId] || 'DIGEMABEL');
-
             document.getElementById('globalSearch').value = '';
             const table = document.getElementById(`table-${tabId}`);
             if(table) table.dataset.specialFilter = '';
             const badge = document.getElementById(`badge-activos-${tabId}`);
             if(badge) badge.classList.add('hidden');
-
             if(typeof lucide !== 'undefined') { lucide.createIcons(); }
-            if (['propiedad', 'habilitacion', 'comercializacion', 'compras'].includes(tabId)) applyAllFilters(tabId);
+            if (['propiedad', 'habilitacion', 'comercializacion', 'compras', 'gestiones'].includes(tabId)) applyAllFilters(tabId);
         }
-
         function drillDown(tabId, filterMode) {
             switchTab(tabId);
             const searchInput = document.getElementById('globalSearch');
             const table = document.getElementById(`table-${tabId}`);
             const badge = document.getElementById(`badge-activos-${tabId}`);
             const badgeText = document.getElementById(`badge-text-${tabId}`);
-
             document.querySelectorAll('.filter-select').forEach(s => s.value = '');
-
             if (filterMode === 'mora_activos') {
                 searchInput.value = '';
                 if(table) table.dataset.specialFilter = 'mora_activos';
@@ -614,12 +696,10 @@
                 if(table) table.dataset.specialFilter = '';
                 if(badge) badge.classList.add('hidden');
             }
-
             applyAllFilters(tabId);
             searchInput.focus(); searchInput.classList.add('ring-4', 'ring-blue-400', 'bg-blue-50');
             setTimeout(() => searchInput.classList.remove('ring-4', 'ring-blue-400', 'bg-blue-50'), 800);
         }
-
         function resetFilters(tabName) {
             const activeSection = document.getElementById('tab-' + tabName);
             if(!activeSection) return;
@@ -627,48 +707,36 @@
             document.getElementById('globalSearch').value = '';
             clearSpecialFilter(tabName);
         }
-
         function filterTables() {
             const activeSection = document.querySelector('.tab-content.active');
             if(!activeSection) return;
             applyAllFilters(activeSection.id.replace('tab-', ''));
         }
-
         function applyAllFilters(tabName) {
             const activeSection = document.getElementById('tab-' + tabName);
             if(!activeSection) return;
-
             const table = document.getElementById(`table-${tabName}`);
             const specialFilter = table ? table.dataset.specialFilter : '';
-
             const globalInput = normalizeText(document.getElementById('globalSearch').value);
             let threshold = null; let searchText = globalInput;
             const gtMatch = globalInput.match(/>\s*(\d+)/);
             if (gtMatch) { threshold = parseInt(gtMatch[1], 10); searchText = globalInput.replace(gtMatch[0], '').trim(); }
             const searchTerms = searchText.split(/\s+/).filter(t => t !== '');
-
             const selects = activeSection.querySelectorAll('.filter-select');
             let dropdownFilters = [];
             selects.forEach(s => { if(s.value !== '') dropdownFilters.push({ col: parseInt(s.dataset.col), val: s.value, type: s.dataset.type }); });
-
             const rows = activeSection.querySelectorAll('tbody tr.searchable-row');
             let visibleCount = 0; let visibleSum = 0; let hasMoney = false;
-
             rows.forEach(row => {
                 const cells = Array.from(row.querySelectorAll('td'));
-
-                // LECTURA DEL CANDADO DE DATOS
                 let passSpecial = true;
                 const estado = row.getAttribute('data-estado') || "";
                 const moraDias = parseFloat(row.getAttribute('data-mora')) || 0;
-
                 let isPropiaOrCamping = estado.includes('propia') || estado.includes('camping');
-                let isRetirado = estado.includes('retirado') || estado.includes('entregado') || estado.includes('nota de credito');
-
+                let isRetirado = esEstadoCerrado(estado);
                 if (isRetirado) {
                     isPropiaOrCamping = false;
                 }
-
                 if (specialFilter === 'mora_activos') {
                     if (!isPropiaOrCamping || moraDias > 30 === false) passSpecial = false;
                 } else if (specialFilter === 'al_dia_propios') {
@@ -676,11 +744,10 @@
                 } else if (specialFilter === 'activos') {
                     if (!isPropiaOrCamping) passSpecial = false;
                 }
-
                 let passDropdowns = true;
                 dropdownFilters.forEach(f => {
                     const cellRaw = cells[f.col] ? cells[f.col].dataset.raw : '';
-                    const cellText = cells[f.col] ? cells[f.col].textContent : ''; // textContent para leer el texto aunque esté oculto por CSS
+                    const cellText = cells[f.col] ? cells[f.col].textContent : '';
                     if (f.type === 'range') {
                         const num = parseFloat(cellText.replace(/[.₲\s%]/g, '').replace(',', '.'));
                         if (isNaN(num)) { passDropdowns = false; }
@@ -692,10 +759,8 @@
                         }
                     } else { if (cellRaw !== f.val) passDropdowns = false; }
                 });
-
                 const rowText = normalizeText(row.textContent);
                 let passText = searchTerms.every(term => rowText.includes(term));
-
                 let passNum = true;
                 if (threshold !== null) {
                     passNum = cells.some(cell => {
@@ -703,7 +768,6 @@
                         return !isNaN(val) && val >= threshold && val < 5000;
                     });
                 }
-
                 if (passSpecial && passDropdowns && passText && passNum) {
                     row.style.display = ''; visibleCount++;
                     cells.forEach(c => {
@@ -714,7 +778,6 @@
                     });
                 } else { row.style.display = 'none'; }
             });
-
             setSafeText(`count-${tabName}`, visibleCount);
             const sumContainer = document.getElementById(`sum-container-${tabName}`);
             const sumDiv = document.getElementById(`sum-div-${tabName}`);
@@ -723,7 +786,6 @@
                 setSafeText(`sum-${tabName}`, "₲ " + Math.round(visibleSum).toLocaleString('es-PY'));
             } else if (sumContainer) { sumContainer.classList.add('hidden'); if(sumDiv) sumDiv.classList.add('hidden'); }
         }
-
         // ==========================================
         // FETCH DATA Y CÁLCULO PRINCIPAL
         // ==========================================
@@ -732,7 +794,6 @@
             const errorMsg = document.getElementById('error-msg');
             const retryBtn = document.getElementById('btn-retry');
             const syncIndicators = document.querySelectorAll('.sync-indicator');
-
             if (!forceRefresh) {
                 const cachedData = sessionStorage.getItem(CACHE_KEY);
                 if (cachedData) {
@@ -740,20 +801,15 @@
                     catch(e) { console.warn("Cache inválido."); }
                 }
             }
-
             try {
                 if(!isSilent) { loader.style.display = 'flex'; errorMsg.innerHTML = ''; retryBtn.classList.add('hidden'); }
                 else { syncIndicators.forEach(el => el.classList.remove('hidden')); }
-
                 const response = await fetch(API_URL, { method: 'GET', redirect: 'follow' });
                 if (!response.ok) throw new Error(`HTTP Error`);
                 const rawText = await response.text();
-
                 try { rawDataCache = JSON.parse(rawText); } catch(e) { throw new Error("Bloqueo temporal de Google por seguridad."); }
                 try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(rawDataCache)); } catch(e) { console.warn("Memoria local llena."); }
-
                 renderData(rawDataCache);
-
                 if(!isSilent) { loader.classList.add('opacity-0'); setTimeout(() => loader.style.display = 'none', 300); }
                 else { syncIndicators.forEach(el => el.classList.add('hidden')); }
                 setTimeout(() => { if(typeof lucide !== 'undefined') lucide.createIcons(); }, 100);
@@ -762,100 +818,76 @@
                 else { syncIndicators.forEach(el => el.classList.add('hidden')); }
             }
         }
-
         function retryFetch() {
             sessionStorage.removeItem(CACHE_KEY); document.getElementById('loader').classList.remove('opacity-0'); fetchLiveSheetsData(true);
         }
-
         setInterval(() => { fetchLiveSheetsData(true, true); }, 300000);
-
         function renderData(data) {
-            const resumen = data["RESUMEN"];
-            if (!resumen) return;
+            // La hoja pasó a llamarse REPORTES (se mantiene RESUMEN como respaldo)
+            const resumen = getSheet(data, ["REPORTES", "RESUMEN"]);
+            const propiedadRaw = getSheet(data, ["REGISTRO DE PROPIEDAD"]);
 
+            // Respaldo desde la hoja REPORTES (por si la base de datos viniera vacía)
             const rPropia = findRowByLabel(resumen, "gestion propia");
             const rCamping = findRowByLabel(resumen, "gestion camping") || findRowByLabel(resumen, "en gestion camping");
+            const propiaCantHoja = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMontoHoja = (extractNumbersFromRow(rPropia)[1]) || 0;
+            const campingCantHoja = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMontoHoja = (extractNumbersFromRow(rCamping)[1]) || 0;
 
-            const propiaCant = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMonto = (extractNumbersFromRow(rPropia)[1]) || 0;
-            const campingCant = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMonto = (extractNumbersFromRow(rCamping)[1]) || 0;
-
-            let demorasActivas30 = 0;
-            let alDiaPropios = 0;
-            let capitalPendienteTotal = 0;
-
-            const propDb = purifyMatrix(data["REGISTRO DE PROPIEDAD"] || []);
-            if (propDb.length > 0) {
+            // ---- FUENTE ÚNICA DE VERDAD: la base "REGISTRO DE PROPIEDAD" ----
+            let demorasActivas30 = 0, alDiaPropios = 0;
+            let propiaCant = 0, propiaMonto = 0, campingCant = 0, campingMonto = 0;
+            const propDb = purifyMatrix(propiedadRaw || []);
+            if (propDb.length > 1) {
                 const headers = propDb[0];
                 const diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
                 const estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
                 const precioColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t === 'precio' || t.includes('monto'); });
-
                 for (let i = 1; i < propDb.length; i++) {
                     const row = propDb[i];
                     let estadoVal = estadoColIdx !== -1 ? normalizeText(String(row[estadoColIdx])) : "";
-
-                    let isPropiaOrCamping = estadoVal.includes('propia') || estadoVal.includes('camping');
-                    let isRetirado = estadoVal.includes('retirado') || estadoVal.includes('entregado') || estadoVal.includes('nota de credito');
-
-                    if (isRetirado) {
-                        isPropiaOrCamping = false;
-                    }
-
+                    if (esEstadoCerrado(estadoVal)) continue;
+                    const esCamping = estadoVal.includes('camping');
+                    const esPropia = !esCamping && estadoVal.includes('propia');
+                    if (!esCamping && !esPropia) continue;
                     let diasVal = diasColIdx !== -1 ? row[diasColIdx] : 0;
                     let mora = parseFloat(String(diasVal).replace(/[.₲\s%]/g, '').replace(',', '.'));
-
                     let precioVal = precioColIdx !== -1 ? cleanAndParseNumber(row[precioColIdx]) : 0;
-
-                    if (isPropiaOrCamping) {
-                        capitalPendienteTotal += precioVal;
-
-                        if (!isNaN(mora)) {
-                            if (mora > 30) {
-                                demorasActivas30++;
-                            } else {
-                                alDiaPropios++;
-                            }
-                        }
-                    }
+                    if (esCamping) { campingCant++; campingMonto += precioVal; }
+                    else { propiaCant++; propiaMonto += precioVal; }
+                    // Si no hay días válidos se cuenta como "menos de 30" para que los totales siempre cuadren
+                    if (!isNaN(mora) && mora > 30) demorasActivas30++; else alDiaPropios++;
                 }
             }
+            if (propiaCant + campingCant === 0) {
+                propiaCant = propiaCantHoja; propiaMonto = propiaMontoHoja;
+                campingCant = campingCantHoja; campingMonto = campingMontoHoja;
+            }
+            // El total SIEMPRE es la suma de sus partes: ya no puede descuadrar
+            const totalActivos = propiaCant + campingCant;
+            const capitalPendienteTotal = propiaMonto + campingMonto;
 
-            // NUEVA LOGICA: Total Activos es literalmente >30 + <30
-            const totalActivos = demorasActivas30 + alDiaPropios;
-
-            // APLICACIÓN DE LOS CÁLCULOS A LAS TARJETAS
             setSafeText('kpi-mas-30', demorasActivas30);
             setSafeText('kpi-cartera-total', totalActivos);
             setSafeText('kpi-menos-30', alDiaPropios);
             setSafeText('val-cartera-monto', formatGuaranies(capitalPendienteTotal));
-
             setSafeText('td-propia-cant', propiaCant); setSafeText('td-propia-monto', formatGuaranies(propiaMonto));
             setSafeText('td-camping-cant', campingCant); setSafeText('td-camping-monto', formatGuaranies(campingMonto));
             setSafeText('td-total-cant', totalActivos); setSafeText('td-total-monto', formatGuaranies(capitalPendienteTotal));
-
             updateDonutChart(propiaCant, campingCant);
 
-            const rTotalCH = extractSmartMonthlyData(resumen, "cantidad de gestiones de documentos para ch");
-            const rEmisionRP = extractSmartMonthlyData(resumen, "emision de rp");
-            const rDemorasGrafico = extractSmartMonthlyData(resumen, "demoraron mas de 30");
-            updateMixedChart(rTotalCH, rEmisionRP, rDemorasGrafico);
-
-            renderGestionArmas(data["ENTREGAS - ARMAS"] || [], "tabla-gestion-armas");
-
+            renderGestionArmas(getSheet(data, ["ENTREGAS - ARMAS"]), "tabla-gestion-armas");
             renderRenovaciones(resumen, "tabla-renovaciones");
-
-            renderGestiones2026(data["ENTREGAS - ARMAS"] || [], "tabla-gestiones");
-            renderDatabaseTable(data["REGISTRO DE PROPIEDAD"] || [], "tabla-propiedad", "propiedad");
-            renderDatabaseTable(data["CARNET DE HABILITACION"] || [], "tabla-habilitacion", "habilitacion");
-            renderDatabaseTable(data["PERMISOS DE COMERCIALIZACION"] || [], "tabla-comercializacion", "comercializacion");
-            renderDatabaseTable(data["COMPRA DE ARMAS"] || [], "tabla-compras", "compras");
-
+            renderPendientes(propiedadRaw);
+            renderCampingPendientes(propiedadRaw, "tabla-gestiones");
+            renderDatabaseTable(propiedadRaw || [], "tabla-propiedad", "propiedad");
+            renderDatabaseTable(getSheet(data, ["CARNET DE HABILITACION"]), "tabla-habilitacion", "habilitacion");
+            renderDatabaseTable(getSheet(data, ["PERMISOS DE COMERCIALIZACION"]), "tabla-comercializacion", "comercializacion");
+            renderDatabaseTable(getSheet(data, ["COMPRA DE ARMAS"]), "tabla-compras", "compras");
             ['propiedad', 'habilitacion', 'comercializacion', 'compras'].forEach(tab => applyAllFilters(tab));
         }
     </script>
 </head>
 <body class="flex h-screen overflow-hidden" onload="fetchLiveSheetsData();">
-
     <div id="loader" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center transition-all duration-300">
         <div class="relative flex items-center justify-center w-20 h-20 mb-4">
             <div class="absolute inset-0 border-4 border-slate-700 rounded-full"></div>
@@ -867,27 +899,23 @@
             <i data-lucide="refresh-cw" class="w-4 h-4"></i> Reintentar
         </button>
     </div>
-
     <div id="toast" class="toast"></div>
-
     <aside class="w-20 md:w-[260px] bg-white flex flex-col border-r border-slate-200 z-20 flex-shrink-0 transition-all shadow-[2px_0_10px_rgba(0,0,0,0.02)] print:hidden">
         <div class="p-4 md:p-6 border-b border-slate-100 flex items-center justify-center h-20 cursor-pointer hover:bg-slate-50 transition-colors" onclick="retryFetch()" title="Forzar Sincronización">
             <img src="LOGOC44.png" alt="Logo C44" class="max-h-12 w-auto object-contain hidden md:block" onerror="this.style.display='none'">
             <i data-lucide="layout-dashboard" class="w-8 h-8 text-blue-600 block md:hidden"></i>
         </div>
-
         <nav class="flex-1 p-3 md:p-4 space-y-2 overflow-y-auto">
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 mt-2 hidden md:block">Analítica & Control</p>
             <button id="btn-resumen" onclick="switchTab('resumen')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-bold rounded-lg bg-blue-600 text-white shadow-md transition-all">
                 <i data-lucide="pie-chart" class="w-5 h-5"></i> <span class="hidden md:block">Panel Principal</span>
             </button>
             <button id="btn-gestiones" onclick="switchTab('gestiones')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
-                <i data-lucide="calendar-check" class="w-5 h-5 text-orange-500"></i> <span class="hidden md:block">Gestión Propia y Camping</span>
+                <i data-lucide="tent" class="w-5 h-5 text-purple-500"></i> <span class="hidden md:block">Gestión Camping</span>
             </button>
             <button id="btn-renovaciones" onclick="switchTab('renovaciones')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
                 <i data-lucide="calendar-clock" class="w-5 h-5 text-rose-500"></i> <span class="hidden md:block">Renovación de Carnets</span>
             </button>
-
             <div class="my-4 border-t border-slate-100"></div>
             <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 hidden md:block">Bases de Datos</p>
             <button id="btn-propiedad" onclick="switchTab('propiedad')" class="nav-btn w-full flex items-center justify-center md:justify-start gap-3 p-3 md:px-4 md:py-3 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-lg transition-all">
@@ -904,7 +932,6 @@
             </button>
         </nav>
     </aside>
-
     <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50/50">
         <header class="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 md:px-8 py-4 flex justify-between items-center z-10 sticky top-0 flex-shrink-0 print:hidden">
             <div class="flex items-center gap-3">
@@ -923,11 +950,8 @@
                 </button>
             </div>
         </header>
-
         <div class="flex-1 overflow-y-auto p-4 md:p-8 space-y-8">
-
             <section id="tab-resumen" class="tab-content active space-y-8">
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                     <div onclick="drillDown('propiedad', 'activos')" class="clickable-card glass-card border-t-4 border-t-blue-500 p-6 relative group" title="Ver todos los activos en proceso">
                         <div class="flex justify-between items-start">
@@ -941,7 +965,6 @@
                             <div class="bg-blue-50 p-3 rounded-xl text-blue-600"><i data-lucide="users" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-
                     <div onclick="drillDown('propiedad', 'mora_activos')" class="clickable-card glass-card border-t-4 border-t-rose-500 p-6 relative group" title="Ver carpetas activas con mora">
                         <div class="flex justify-between items-start">
                             <div>
@@ -954,7 +977,6 @@
                             <div class="bg-rose-50 p-3 rounded-xl text-rose-500"><i data-lucide="alert-triangle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-
                     <div onclick="drillDown('propiedad', 'al_dia_propios')" class="clickable-card glass-card border-t-4 border-t-purple-500 p-6 relative group" title="Ver clientes sanos de Propia y Camping">
                         <div class="flex justify-between items-start">
                             <div>
@@ -967,7 +989,6 @@
                             <div class="bg-purple-50 p-3 rounded-xl text-purple-600"><i data-lucide="check-circle" class="w-6 h-6"></i></div>
                         </div>
                     </div>
-
                     <div class="glass-card border-t-4 border-t-emerald-500 p-6 relative bg-gradient-to-br from-white to-emerald-50/30">
                         <div class="flex justify-between items-start">
                             <div>
@@ -981,10 +1002,8 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 flex flex-col gap-6">
-
                         <div class="glass-card flex flex-col overflow-hidden h-full">
                             <div class="px-6 py-5 border-b border-slate-100">
                                 <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Principal</h3>
@@ -1014,10 +1033,31 @@
                                 </table>
                             </div>
                         </div>
-
                     </div>
                     <div class="glass-card p-6 flex flex-col justify-center items-center h-full min-h-[300px]">
                         <div class="w-full max-w-[220px] cursor-pointer" title="Filtra tocando los colores"><canvas id="donutChart"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- ===== REPORTES DE PENDIENTES (reemplaza Evolución Operativa General) ===== -->
+                <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+                    <div class="rep-panel lg:col-span-2">
+                        <div class="rep-head">
+                            <h3 class="rep-title"><i data-lucide="calendar-range" class="w-4 h-4 text-blue-500"></i> Pendientes por año</h3>
+                            <span class="rep-chip">Antigüedad</span>
+                        </div>
+                        <div class="rep-body" id="pendientes-anios">
+                            <div class="py-10 text-center text-slate-300 text-sm">Cargando…</div>
+                        </div>
+                    </div>
+                    <div class="rep-panel lg:col-span-3">
+                        <div class="rep-head">
+                            <h3 class="rep-title"><i data-lucide="layers" class="w-4 h-4 text-purple-500"></i> Pendientes por gestión</h3>
+                            <span class="rep-chip">Clic en una fila para ver los clientes</span>
+                        </div>
+                        <div class="rep-body" id="pendientes-gestion">
+                            <div class="py-10 text-center text-slate-300 text-sm">Cargando…</div>
+                        </div>
                     </div>
                 </div>
 
@@ -1025,17 +1065,9 @@
                     <div class="px-6 py-5 border-b border-slate-100">
                         <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="crosshair" class="w-5 h-5 text-slate-400"></i> Control Operativo: Gestión de Armas</h3>
                     </div>
-                    <div class="overflow-x-auto" id="tabla-gestion-armas">
-                        </div>
+                    <div class="overflow-x-auto" id="tabla-gestion-armas"></div>
                 </div>
-
-                <div class="glass-card p-6 w-full hidden md:block">
-                    <h3 class="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2"><i data-lucide="bar-chart-2" class="w-5 h-5 text-blue-500"></i> Evolución Operativa General</h3>
-                    <div class="w-full h-72"><canvas id="mixedChart"></canvas></div>
-                </div>
-
             </section>
-
             <section id="tab-gestiones" class="tab-content space-y-4"><div id="tabla-gestiones"></div></section>
             <section id="tab-renovaciones" class="tab-content space-y-4">
                 <div class="glass-card p-5 border-l-4 border-l-rose-500 bg-gradient-to-br from-white to-rose-50/30">
@@ -1050,26 +1082,17 @@
             <section id="tab-comercializacion" class="tab-content space-y-4"><div id="tabla-comercializacion"></div></section>
         </div>
     </main>
-
     <script>
-        let donutObj, mixedObj;
-
+        let donutObj;
         function handleChartClick(event, elements, chart, type) {
             if (elements.length > 0) {
                 const elementIndex = elements[0].index;
-                let keyword = "";
                 if (type === 'donut') {
                     const labels = ['propia', 'camping'];
-                    keyword = labels[elementIndex];
-                    drillDown('propiedad', keyword);
-                } else if (type === 'mixed') {
-                    const labels = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                    keyword = labels[elementIndex];
-                    drillDown('gestiones', keyword);
+                    drillDown('propiedad', labels[elementIndex]);
                 }
             }
         }
-
         function updateDonutChart(propia, camping) {
             const ctx = document.getElementById('donutChart').getContext('2d');
             if (donutObj) donutObj.destroy();
@@ -1077,30 +1100,6 @@
                 type: 'doughnut',
                 data: { labels: ['Gestión Propia', 'Gestión Camping'], datasets: [{ data: [propia, camping], backgroundColor: ['#3b82f6', '#a855f7'], borderWidth: 2 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 6, font: { family: 'Inter', size: 11, weight: '500' } } } }, cutout: '75%', onClick: (event, elements, chart) => handleChartClick(event, elements, chart, 'donut') }
-            });
-        }
-
-        function updateMixedChart(dataCH, dataRP, dataDemoras) {
-            const ctx = document.getElementById('mixedChart').getContext('2d');
-            if (!ctx) return;
-            if (mixedObj) mixedObj.destroy();
-            const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-            mixedObj = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: meses,
-                    datasets: [
-                        { label: 'Demoras >30 Días', type: 'line', data: dataDemoras, borderColor: '#f43f5e', backgroundColor: '#f43f5e', borderWidth: 3, tension: 0.4, pointBackgroundColor: '#fff', pointBorderWidth: 2, yAxisID: 'y' },
-                        { label: 'Gestiones CH', data: dataCH, backgroundColor: '#3b82f6', borderRadius: 4, yAxisID: 'y' },
-                        { label: 'Emisiones RP', data: dataRP, backgroundColor: '#a855f7', borderRadius: 4, yAxisID: 'y' }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                    plugins: { legend: { position: 'top', labels: { usePointStyle: true, font: { family: 'Inter', weight: '500' } } } },
-                    scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#f1f5f9' }, border: { dash: [4, 4] } } },
-                    onClick: (event, elements, chart) => handleChartClick(event, elements, chart, 'mixed')
-                }
             });
         }
     </script>
