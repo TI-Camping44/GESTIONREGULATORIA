@@ -397,13 +397,17 @@
             if (difCant !== 0) detalle.push(`clientes: hoja ${a.hoja.total} vs base ${a.base.total}`);
             if (Math.abs(difMonto) >= 1) detalle.push(`monto: diferencia de ${formatGuaranies(Math.abs(difMonto))}`);
             el.classList.remove('hidden');
-            el.innerHTML = `<div class="flex items-start gap-2.5 px-6 py-3 bg-amber-50 border-b border-amber-200 text-amber-800">
-                <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
-                <p class="text-[11px] leading-relaxed">
-                    <span class="font-bold uppercase tracking-wide">Revisar:</span>
-                    se muestran las cifras de la hoja REPORTES. La base de datos suma distinto (${detalle.join(' · ')}).
-                    Ejecutar <code class="bg-amber-100 px-1 rounded font-mono">auditarMontos()</code> en la consola para ver el detalle por cliente.
-                </p>
+            el.innerHTML = `<div class="flex flex-col sm:flex-row sm:items-center gap-2 px-6 py-3 bg-amber-50 border-b border-amber-200 text-amber-800">
+                <div class="flex items-start gap-2.5 flex-1">
+                    <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 flex-shrink-0"></i>
+                    <p class="text-[11px] leading-relaxed">
+                        <span class="font-bold uppercase tracking-wide">Revisar:</span>
+                        se muestran las cifras de la hoja REPORTES. La base de datos suma distinto (${detalle.join(' · ')}).
+                    </p>
+                </div>
+                <button onclick="abrirAuditoria()" class="self-start sm:self-auto flex-shrink-0 inline-flex items-center gap-1.5 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold uppercase tracking-wide px-3 py-1.5 rounded-md shadow-sm transition-colors">
+                    <i data-lucide="search-code" class="w-3.5 h-3.5"></i> Ver detalle
+                </button>
             </div>`;
             console.warn('[Auditoría cartera] La hoja y la base no coinciden:', detalle.join(' | '), a);
             if (typeof lucide !== 'undefined') lucide.createIcons();
@@ -416,6 +420,108 @@
             console.table(a.detalle);
             return a;
         };
+        // Visor de auditoría en pantalla (no hace falta abrir la consola)
+        function abrirAuditoria() {
+            const a = window.__auditoriaCartera;
+            const cont = document.getElementById('modal-auditoria');
+            if (!a || !cont) return;
+            const difCant = a.base.total - a.hoja.total;
+            const difMonto = a.base.monto - a.hoja.monto;
+            const objetivo = Math.abs(difMonto);
+            const filas = [...a.detalle].sort((x, y) => y.monto - x.monto);
+            const candidatos = filas.filter(f => objetivo > 0 && Math.abs(f.monto - objetivo) < 1).length;
+            const box = (titulo, cant, monto, extra) => `
+                <div class="flex-1 min-w-[180px] bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">${titulo}</p>
+                    <p class="text-lg font-extrabold text-slate-800 tabular-nums">${monto}</p>
+                    <p class="text-xs text-slate-500 mt-1">${cant} clientes${extra || ''}</p>
+                </div>`;
+            cont.innerHTML = `
+            <div class="fixed inset-0 z-[9998] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 print:hidden" onclick="if(event.target===this) cerrarAuditoria()">
+                <div class="bg-white w-full max-w-4xl max-h-[88vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+                    <div class="px-6 py-5 border-b border-slate-100 flex items-start justify-between gap-4">
+                        <div>
+                            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2"><i data-lucide="scale" class="w-5 h-5 text-amber-500"></i> Auditoría de cartera</h3>
+                            <p class="text-xs text-slate-500 mt-1">Comparación entre la hoja REPORTES (lo que se publica) y la suma de la base REGISTRO DE PROPIEDAD.</p>
+                        </div>
+                        <button onclick="cerrarAuditoria()" class="text-slate-400 hover:text-slate-700 hover:bg-slate-100 p-1.5 rounded-lg transition-colors flex-shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
+                    </div>
+                    <div class="p-6 border-b border-slate-100 flex flex-wrap gap-3">
+                        ${box('Hoja REPORTES', a.hoja.total, formatGuaranies(a.hoja.monto))}
+                        ${box('Base de datos', a.base.total, formatGuaranies(a.base.monto))}
+                        <div class="flex-1 min-w-[180px] bg-amber-50 border border-amber-200 rounded-xl p-4">
+                            <p class="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-2">Diferencia</p>
+                            <p class="text-lg font-extrabold text-amber-700 tabular-nums">${(difMonto >= 0 ? '+' : '−') + formatGuaranies(Math.abs(difMonto)).replace('₲ ', '₲ ')}</p>
+                            <p class="text-xs text-amber-600 mt-1">${difCant === 0 ? 'Misma cantidad de clientes' : (difCant > 0 ? '+' : '−') + Math.abs(difCant) + ' cliente(s)'}</p>
+                        </div>
+                    </div>
+                    ${objetivo > 0 ? `<div class="px-6 py-3 bg-slate-50 border-b border-slate-100 text-xs text-slate-600 flex items-center gap-2">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500 flex-shrink-0"></i>
+                        ${candidatos > 0
+                            ? `Se ${candidatos === 1 ? 'marcó 1 registro cuyo monto coincide' : 'marcaron ' + candidatos + ' registros cuyo monto coincide'} exactamente con la diferencia. Suele ser ahí donde está el desvío.`
+                            : `Ningún registro coincide por sí solo con la diferencia: probablemente se reparta entre varias filas o la planilla use otro importe para algún cliente.`}
+                    </div>` : ''}
+                    <div class="flex-1 overflow-y-auto">
+                        <table class="modern-table">
+                            <thead><tr>
+                                <th onclick="sortTable(this)">Cliente</th>
+                                <th onclick="sortTable(this)" class="text-center">Segmento</th>
+                                <th onclick="sortTable(this)">Estado general</th>
+                                <th onclick="sortTable(this)" class="text-center">Fila</th>
+                                <th onclick="sortTable(this)" class="text-right">Monto sumado</th>
+                            </tr></thead>
+                            <tbody class="divide-y divide-slate-100">
+                                ${filas.map(f => {
+                                    const esCandidato = objetivo > 0 && Math.abs(f.monto - objetivo) < 1;
+                                    return `<tr class="searchable-row ${esCandidato ? 'bg-amber-50/70' : ''}">
+                                        <td class="font-semibold text-slate-800">${f.cliente || '—'} ${esCandidato ? '<span class="ml-1 bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase">= diferencia</span>' : ''}</td>
+                                        <td class="text-center">${createBadge(f.segmento)}</td>
+                                        <td class="text-slate-500 text-xs">${f.estado || '—'}</td>
+                                        <td class="text-center text-slate-400 tabular-nums">${f.fila}</td>
+                                        <td class="text-right font-bold text-slate-700 tabular-nums">${formatGuaranies(f.monto)}</td>
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="px-6 py-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50">
+                        <p class="text-[11px] text-slate-500">Columna sumada de la base: <span class="font-bold text-slate-700">${filas[0] ? filas[0].columna : '—'}</span> · ${filas.length} registros</p>
+                        <div class="flex items-center gap-2">
+                            <button onclick="exportarAuditoriaCSV()" class="bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors"><i data-lucide="download" class="w-3.5 h-3.5"></i> Exportar CSV</button>
+                            <button onclick="cerrarAuditoria()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            cont.classList.remove('hidden');
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        function cerrarAuditoria() {
+            const cont = document.getElementById('modal-auditoria');
+            if (!cont) return;
+            cont.classList.add('hidden');
+            cont.innerHTML = '';
+        }
+        function exportarAuditoriaCSV() {
+            const a = window.__auditoriaCartera;
+            if (!a) return;
+            let csv = ['"FILA","CLIENTE","SEGMENTO","ESTADO GENERAL","COLUMNA SUMADA","MONTO"'];
+            a.detalle.forEach(f => {
+                csv.push([f.fila, f.cliente, f.segmento, f.estado, f.columna, f.monto]
+                    .map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','));
+            });
+            csv.push('');
+            csv.push(`"TOTAL BASE","","","","","${a.base.monto}"`);
+            csv.push(`"TOTAL HOJA REPORTES","","","","","${a.hoja.monto}"`);
+            csv.push(`"DIFERENCIA","","","","","${a.base.monto - a.hoja.monto}"`);
+            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv.join('\n')], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.download = `Auditoria_Cartera_${new Date().toISOString().slice(0, 10)}.csv`;
+            link.href = window.URL.createObjectURL(blob);
+            link.style.display = "none";
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarAuditoria(); });
 
         // --- PARSEO DE FECHAS FLEXIBLE (soporta M/D/AAAA, D/M/AAAA e ISO) ---
         function parseFlexibleDate(str) {
@@ -956,6 +1062,7 @@
         </button>
     </div>
     <div id="toast" class="toast"></div>
+    <div id="modal-auditoria" class="hidden"></div>
     <aside class="w-20 md:w-[260px] bg-white flex flex-col border-r border-slate-200 z-20 flex-shrink-0 transition-all shadow-[2px_0_10px_rgba(0,0,0,0.02)] print:hidden">
         <div class="p-4 md:p-6 border-b border-slate-100 flex items-center justify-center h-20 cursor-pointer hover:bg-slate-50 transition-colors" onclick="retryFetch()" title="Forzar Sincronización">
             <img src="LOGOC44.png" alt="Logo C44" class="max-h-12 w-auto object-contain hidden md:block" onerror="this.style.display='none'">
