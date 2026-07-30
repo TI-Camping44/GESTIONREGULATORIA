@@ -380,6 +380,41 @@
             contGest.innerHTML = g;
         }
 
+        // ==========================================================
+        // AUDITORÍA: compara lo publicado (hoja REPORTES) contra lo
+        // que suma la base. Si difieren, avisa en pantalla y consola.
+        // Para el detalle fila por fila: auditarMontos() en la consola.
+        // ==========================================================
+        function renderAuditoriaCartera() {
+            const el = document.getElementById('alerta-descuadre');
+            const a = window.__auditoriaCartera;
+            if (!el || !a) return;
+            const sinBase = a.base.total === 0;
+            const difCant = a.base.total - a.hoja.total;
+            const difMonto = a.base.monto - a.hoja.monto;
+            if (sinBase || (difCant === 0 && Math.abs(difMonto) < 1)) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+            let detalle = [];
+            if (difCant !== 0) detalle.push(`clientes: hoja ${a.hoja.total} vs base ${a.base.total}`);
+            if (Math.abs(difMonto) >= 1) detalle.push(`monto: diferencia de ${formatGuaranies(Math.abs(difMonto))}`);
+            el.classList.remove('hidden');
+            el.innerHTML = `<span class="tooltip-container">
+                <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide cursor-help">
+                    <i data-lucide="alert-circle" class="w-3 h-3"></i> Revisar
+                </span>
+                <span class="info-tooltip below" style="width:260px">Se muestran las cifras de la hoja REPORTES. La base de datos suma distinto (${detalle.join(' · ')}). Ejecutar auditarMontos() en la consola para ver el detalle por cliente.</span>
+            </span>`;
+            console.warn('[Auditoría cartera] La hoja y la base no coinciden:', detalle.join(' | '), a);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        window.auditarMontos = function() {
+            const a = window.__auditoriaCartera;
+            if (!a) { console.log('Todavía no se cargaron los datos.'); return; }
+            console.log('Publicado (hoja REPORTES):', a.hoja);
+            console.log('Calculado (base REGISTRO DE PROPIEDAD):', a.base);
+            console.table(a.detalle);
+            return a;
+        };
+
         // --- PARSEO DE FECHAS FLEXIBLE (soporta M/D/AAAA, D/M/AAAA e ISO) ---
         function parseFlexibleDate(str) {
             if (!str) return null;
@@ -833,15 +868,17 @@
             const propiaCantHoja = (extractNumbersFromRow(rPropia)[0]) || 0;   const propiaMontoHoja = (extractNumbersFromRow(rPropia)[1]) || 0;
             const campingCantHoja = (extractNumbersFromRow(rCamping)[0]) || 0; const campingMontoHoja = (extractNumbersFromRow(rCamping)[1]) || 0;
 
-            // ---- FUENTE ÚNICA DE VERDAD: la base "REGISTRO DE PROPIEDAD" ----
+            // ---- CÁLCULO SOBRE LA BASE "REGISTRO DE PROPIEDAD" (mora + auditoría) ----
             let demorasActivas30 = 0, alDiaPropios = 0;
-            let propiaCant = 0, propiaMonto = 0, campingCant = 0, campingMonto = 0;
+            let propiaCantDb = 0, propiaMontoDb = 0, campingCantDb = 0, campingMontoDb = 0;
+            const detalleAuditoria = [];
             const propDb = purifyMatrix(propiedadRaw || []);
             if (propDb.length > 1) {
                 const headers = propDb[0];
                 const diasColIdx = headers.findIndex(h => normalizeText(String(h)).includes('dias'));
                 const estadoColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t.includes('estado general') || t === 'estado'; });
                 const precioColIdx = headers.findIndex(h => { const t = normalizeText(String(h)); return t === 'precio' || t.includes('monto'); });
+                const nombreColIdx = findCol(headers, ['nombre y apellido', 'nombre', 'cliente', 'razon social', 'titular']);
                 for (let i = 1; i < propDb.length; i++) {
                     const row = propDb[i];
                     let estadoVal = estadoColIdx !== -1 ? normalizeText(String(row[estadoColIdx])) : "";
@@ -852,19 +889,36 @@
                     let diasVal = diasColIdx !== -1 ? row[diasColIdx] : 0;
                     let mora = parseFloat(String(diasVal).replace(/[.₲\s%]/g, '').replace(',', '.'));
                     let precioVal = precioColIdx !== -1 ? cleanAndParseNumber(row[precioColIdx]) : 0;
-                    if (esCamping) { campingCant++; campingMonto += precioVal; }
-                    else { propiaCant++; propiaMonto += precioVal; }
+                    if (esCamping) { campingCantDb++; campingMontoDb += precioVal; }
+                    else { propiaCantDb++; propiaMontoDb += precioVal; }
+                    detalleAuditoria.push({
+                        fila: i + 1,
+                        cliente: nombreColIdx !== -1 ? String(row[nombreColIdx] || '').trim() : '',
+                        segmento: esCamping ? 'CAMPING' : 'PROPIA',
+                        estado: estadoColIdx !== -1 ? String(row[estadoColIdx] || '').trim() : '',
+                        columna: precioColIdx !== -1 ? String(headers[precioColIdx] || '').trim() : '(no detectada)',
+                        monto: precioVal
+                    });
                     // Si no hay días válidos se cuenta como "menos de 30" para que los totales siempre cuadren
                     if (!isNaN(mora) && mora > 30) demorasActivas30++; else alDiaPropios++;
                 }
             }
-            if (propiaCant + campingCant === 0) {
-                propiaCant = propiaCantHoja; propiaMonto = propiaMontoHoja;
-                campingCant = campingCantHoja; campingMonto = campingMontoHoja;
-            }
+            // ---- CIFRAS PUBLICADAS: salen de la hoja REPORTES (es la planilla oficial que validan los directivos) ----
+            const hojaTieneBloque = (propiaCantHoja + campingCantHoja) > 0 || (propiaMontoHoja + campingMontoHoja) > 0;
+            const propiaCant   = hojaTieneBloque ? propiaCantHoja   : propiaCantDb;
+            const propiaMonto  = hojaTieneBloque ? propiaMontoHoja  : propiaMontoDb;
+            const campingCant  = hojaTieneBloque ? campingCantHoja  : campingCantDb;
+            const campingMonto = hojaTieneBloque ? campingMontoHoja : campingMontoDb;
             // El total SIEMPRE es la suma de sus partes: ya no puede descuadrar
             const totalActivos = propiaCant + campingCant;
             const capitalPendienteTotal = propiaMonto + campingMonto;
+            // Auditoría silenciosa hoja vs base (avisa si empiezan a diferir)
+            window.__auditoriaCartera = {
+                hoja:  { propiaCant, propiaMonto, campingCant, campingMonto, total: totalActivos, monto: capitalPendienteTotal },
+                base:  { propiaCant: propiaCantDb, propiaMonto: propiaMontoDb, campingCant: campingCantDb, campingMonto: campingMontoDb, total: propiaCantDb + campingCantDb, monto: propiaMontoDb + campingMontoDb },
+                detalle: detalleAuditoria
+            };
+            renderAuditoriaCartera();
 
             setSafeText('kpi-mas-30', demorasActivas30);
             setSafeText('kpi-cartera-total', totalActivos);
@@ -1005,8 +1059,9 @@
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="lg:col-span-2 flex flex-col gap-6">
                         <div class="glass-card flex flex-col overflow-hidden h-full">
-                            <div class="px-6 py-5 border-b border-slate-100">
+                            <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-3">
                                 <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2"><i data-lucide="wallet" class="w-5 h-5 text-slate-400"></i> Distribución de Cartera Principal</h3>
+                                <div id="alerta-descuadre" class="hidden print:hidden"></div>
                             </div>
                             <div class="overflow-x-auto flex-1 flex flex-col justify-center">
                                 <table class="w-full text-sm text-left">
