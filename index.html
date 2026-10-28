@@ -6,30 +6,61 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Gestión Regulatoria · En mantenimiento</title>
 <style>
-  :root { --bg: #F4F5F7; --card: #FFFFFF; --ink: #1C2430; --muted: #5B6472; --line: #E3E6EB; --accent: #A61B1B; }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #12161C; --card: #1B212A; --ink: #E8ECF1; --muted: #A3ACB9; --line: #2A323D; --accent: #E05555; }
-  }
+  :root { --bg: #F4F5F7; --card: #FFFFFF; --ink: #1C2430; --muted: #5B6472; --line: #E3E6EB; --accent: #A61B1B; --blue: #1F5FBF; --soft: #EEF3FC; --ok: #1C6B32; --oksoft: #EAF6EC; }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-         background: var(--bg); color: var(--ink); font-family: Inter, "Segoe UI", Arial, sans-serif; padding: 24px 16px; }
-  main { width: 100%; max-width: 520px; background: var(--card); border: 1px solid var(--line); border-radius: 16px;
-         padding: 36px 28px; text-align: center; }
-  img { width: 96px; height: auto; margin-bottom: 18px; }
-  .tag { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #fff;
-         background: var(--accent); padding: 5px 12px; border-radius: 999px; margin-bottom: 14px; }
-  h1 { font-size: 24px; line-height: 1.25; margin: 0 0 12px; }
-  p { margin: 0 0 10px; color: var(--muted); font-size: 15px; line-height: 1.55; }
-  .foot { margin-top: 18px; font-size: 13px; }
+         background: var(--bg); color: var(--ink); font-family: Inter, "Segoe UI", Arial, sans-serif; padding: 32px 16px; }
+  main { width: 100%; max-width: 760px; background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 36px 32px; }
+  header { display: flex; align-items: center; gap: 18px; margin-bottom: 22px; }
+  header img { width: 78px; height: auto; flex: 0 0 auto; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .07em; color: #fff; background: var(--accent); padding: 5px 12px; border-radius: 999px; }
+  h1 { font-size: 28px; line-height: 1.2; margin: 8px 0 0; }
+  .lede { font-size: 16px; color: var(--muted); line-height: 1.55; margin: 0 0 22px; }
+  h2 { font-size: 15px; letter-spacing: .04em; text-transform: uppercase; color: var(--blue); margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 22px; }
+  .item { border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; }
+  .ic { flex: 0 0 36px; height: 36px; border-radius: 10px; background: var(--soft); color: var(--blue); display: flex; align-items: center; justify-content: center; }
+  .item b { display: block; font-size: 15px; margin-bottom: 3px; }
+  .item span { font-size: 13.5px; color: var(--muted); line-height: 1.45; }
+  .note { background: var(--oksoft); border: 1px solid #B9DFC0; border-radius: 12px; padding: 14px 16px; font-size: 14.5px; line-height: 1.5; color: #1E3A24; }
+  .note b { color: var(--ok); }
+  .foot { margin-top: 18px; font-size: 13px; color: var(--muted); text-align: center; }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } header { flex-direction: column; text-align: center; } main { padding: 28px 20px; } }
 </style>
 </head>
 <body>
 <main>
-  <img src="LOGOC44.png" alt="Camping 44">
-  <div><span class="tag">EN MANTENIMIENTO</span></div>
-  <h1>Tablero de Gestión Regulatoria</h1>
-  <p>Estamos actualizando este tablero a una versión nueva. Mientras tanto queda fuera de servicio.</p>
-  <p>La planilla de Gestión Regulatoria sigue funcionando con normalidad.</p>
+  <header>
+    <img src="LOGOC44.png" alt="Camping 44">
+    <div>
+      <span class="tag">EN MANTENIMIENTO</span>
+      <h1>Tablero de Gestión Regulatoria</h1>
+    </div>
+  </header>
+  <p class="lede">Este tablero queda fuera de servicio mientras lo pasamos a una versión nueva. Apenas esté lista, se comunica por la intranet y por correo.</p>
+
+  <h2>Qué trae la versión nueva</h2>
+  <div class="grid">
+    <div class="item">
+      <div class="ic"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg></div>
+      <div><b>Acceso seguro</b><span>Solo se entra con las cuentas de Camping 44.</span></div>
+    </div>
+    <div class="item">
+      <div class="ic"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg></div>
+      <div><b>Carga desde el tablero</b><span>Altas, cambios y bajas de registros sin tocar la planilla.</span></div>
+    </div>
+    <div class="item">
+      <div class="ic"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"></path></svg></div>
+      <div><b>Datos ordenados</b><span>Listas desplegables y cálculos automáticos, sin errores de tipeo.</span></div>
+    </div>
+    <div class="item">
+      <div class="ic"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div>
+      <div><b>Historial de cambios</b><span>Queda registrado quién modificó cada dato y cuándo.</span></div>
+    </div>
+  </div>
+
+  <div class="note"><b>Mientras tanto:</b> la planilla ACTUALIZADO INDICADORES DIGEMABEL sigue funcionando con normalidad, igual que la actualización diaria del estado de factura desde Odoo.</div>
+
   <p class="foot">Consultas: Área de IT · Camping 44 S.A.</p>
 </main>
 </body>
